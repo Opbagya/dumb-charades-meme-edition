@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fdfaf3;
+  --foreground: #1c1917;
+  --crimson: #991b1b;
+  --crimson-dark: #7f1d1d;
+  --cream: #faf5ed;
+  --cream-soft: #f4ecdf;
+  --cream-dark: #e8ded0;
+  --pop-green: #15803d;
+  --pop-red: #b91c1c;
+  --gold: #d97706;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-crimson: var(--crimson);
+  --color-crimson-dark: var(--crimson-dark);
+  --color-cream: var(--cream);
+  --color-cream-soft: var(--cream-soft);
+  --color-cream-dark: var(--cream-dark);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  overflow-x: hidden;
+}
+
+/* Wavy retro checkerboard background utility */
+.bg-wavy-checker {
+  background-image: url('/checker-pattern.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.bg-wavy-checker-tile {
+  background-image: url('/checker-pattern.jpg');
+  background-size: 240px auto;
+  background-repeat: repeat;
+}
+
+/* Smooth horizontal scroll without ugly scrollbar */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Retro Neo-Brutalist Tactile Buttons & Badges */
+.neo-box {
+  background: white;
+  border: 3px solid #18181b;
+  box-shadow: 4px 4px 0px #18181b;
+  border-radius: 16px;
+}
+
+.neo-box-sm {
+  background: white;
+  border: 2px solid #18181b;
+  box-shadow: 3px 3px 0px #18181b;
+  border-radius: 12px;
+}
+
+.neo-btn {
+  border: 3px solid #18181b;
+  box-shadow: 4px 4px 0px #18181b;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.neo-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #18181b;
+}
+
+/* Flashing Green Alert for Whose Turn It Is */
+@keyframes greenPulse {
+  0%, 100% {
+    background-color: #15803d;
+    box-shadow: 0 0 40px #22c55e, inset 0 0 60px rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    background-color: #14532d;
+    box-shadow: 0 0 15px #15803d, inset 0 0 20px rgba(21, 128, 61, 0.2);
+  }
+}
+
+.animate-turn-green {
+  animation: greenPulse 0.7s infinite alternate ease-in-out;
+}
+
+/* Flashing Red Alert for Timeout */
+@keyframes redPulse {
+  0%, 100% {
+    background-color: #b91c1c;
+    box-shadow: 0 0 50px #ef4444, inset 0 0 70px rgba(239, 68, 68, 0.5);
+  }
+  50% {
+    background-color: #7f1d1d;
+    box-shadow: 0 0 15px #b91c1c, inset 0 0 20px rgba(185, 28, 28, 0.3);
+  }
+}
+
+.animate-timeout-red {
+  animation: redPulse 0.65s infinite alternate ease-in-out;
+}
+
+/* Retro digital clock typography */
+.font-digital {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.05em;
+}
