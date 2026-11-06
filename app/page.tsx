@@ -13,7 +13,6 @@ import { GuesserView } from '@/components/GuesserView';
 import { RedTimeoutAlert } from '@/components/RedTimeoutAlert';
 import { RoundWonModal } from '@/components/RoundWonModal';
 import { LeaderboardPodium } from '@/components/LeaderboardPodium';
-import { SoundToggle } from '@/components/SoundToggle';
 import {
   Users,
   Play,
@@ -399,27 +398,26 @@ function DumbCharadesGame() {
         isPlayingGame ? 'h-[100dvh] max-h-[100dvh] overflow-hidden' : ''
       } bg-[var(--cream)] text-zinc-900 flex flex-col justify-between selection:bg-red-600 selection:text-white`}
     >
-      {/* Floating Sound Toggle */}
-      <SoundToggle />
-
-      {/* TOP DECORATIVE BANNER: Single clown favicon / brand badge */}
+      {/* TOP DECORATIVE BANNER: Upgraded stylized party title */}
       <div
         className={`w-full bg-wavy-checker border-b-2 sm:border-b-4 border-zinc-900 ${
-          isPlayingGame ? 'py-1 sm:py-1.5 px-3' : 'py-3 sm:py-4 px-4'
+          isPlayingGame ? 'py-1 sm:py-1.5 px-3' : 'py-2.5 sm:py-3.5 px-4'
         } shadow-md relative overflow-hidden shrink-0`}
       >
         <div className="max-w-xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white border-2 border-zinc-900 shadow-[2px_2px_0px_#000] flex items-center justify-center text-lg sm:text-xl shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <span className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-amber-300 border-3 border-zinc-950 shadow-[3px_3px_0px_#000] flex items-center justify-center text-xl sm:text-2xl shrink-0 -rotate-3 hover:rotate-0 transition-transform">
               🤡
             </span>
-            <div>
-              <h1 className="font-[family-name:var(--font-display)] font-black text-base sm:text-xl text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-none">
+            <div className="flex flex-col">
+              <h1 className="font-[family-name:var(--font-display)] text-lg sm:text-2xl text-white tracking-wide uppercase leading-none [text-shadow:_2px_2px_0px_#000,_-1px_-1px_0px_#000,_1px_-1px_0px_#000,_-1px_1px_0px_#000,_3px_3px_0px_#000]">
                 DUMB CHARADES
               </h1>
-              <span className="text-[9px] sm:text-[10px] font-black tracking-widest text-amber-300 uppercase drop-shadow-xs">
-                Meme Edition
-              </span>
+              <div className="mt-1 flex items-center">
+                <span className="inline-block px-1.5 py-0.2 bg-amber-300 text-zinc-950 rounded-md border-2 border-zinc-950 text-[9px] sm:text-[10px] font-[family-name:var(--font-display)] uppercase tracking-wider shadow-[1.5px_1.5px_0px_#000] -rotate-1">
+                  ⚡ MEME EDITION
+                </span>
+              </div>
             </div>
           </div>
 

@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, DM_Sans } from "next/font/google";
+import { Lilita_One, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { AgentationProvider } from "@/components/AgentationProvider";
 
-const spaceGrotesk = Space_Grotesk({
+const lilitaOne = Lilita_One({
+  weight: "400",
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
@@ -42,7 +43,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${dmSans.variable}`}>
+    <html lang="en" className={`${lilitaOne.variable} ${dmSans.variable}`}>
       <body className="font-[family-name:var(--font-body)] antialiased">
         {children}
         <AgentationProvider />
