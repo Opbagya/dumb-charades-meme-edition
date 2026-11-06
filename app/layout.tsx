@@ -16,8 +16,16 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Dumb Charades: Meme Edition 🤡",
+  title: "Dumb Charades: Meme Edition",
   description: "The mobile-first real-world party game where you act out the internet's most iconic memes!",
+  icons: {
+    icon: [
+      { url: "/icon.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/icon.png",
+  },
 };
 
 export const viewport: Viewport = {

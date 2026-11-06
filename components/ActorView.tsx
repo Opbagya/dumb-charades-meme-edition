@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import { GameState, MemeItem, Player } from '@/types/game';
-import { DigitalTimer } from './DigitalTimer';
-import { Check, X, Users, Sparkles, VolumeX, Eye } from 'lucide-react';
+import { Check, X, VolumeX, Eye, Timer } from 'lucide-react';
 
 interface ActorViewProps {
   gameState: GameState;
@@ -26,6 +25,19 @@ export function ActorView({
   const currentActorId = gameState.turnOrder[gameState.currentTurnIndex];
   const guesserCandidates = gameState.players.filter((p) => p.id !== currentActorId);
 
+  const safeSeconds = Math.max(0, Math.floor(secondsRemaining));
+  const minutes = Math.floor(safeSeconds / 60);
+  const secs = safeSeconds % 60;
+  const formattedTime = `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+  const isCritical = safeSeconds <= 10;
+  const isWarning = safeSeconds > 10 && safeSeconds <= 25;
+  const timerColor = isCritical
+    ? 'text-red-500 animate-pulse'
+    : isWarning
+    ? 'text-amber-400'
+    : 'text-emerald-400';
+
   const handleNoClick = () => {
     setNoClickedFeedback(true);
     setTimeout(() => setNoClickedFeedback(false), 1200);
@@ -37,102 +49,90 @@ export function ActorView({
   };
 
   return (
-    <div className="flex flex-col items-center w-full max-w-md mx-auto px-4 py-2 pb-8">
-      {/* Turn indicator ribbon */}
-      <div className="w-full flex items-center justify-between mb-3 px-1">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-600 text-white font-black text-xs uppercase tracking-wider border-2 border-zinc-900 shadow-[2px_2px_0px_#18181b]">
-          <span className="w-2 h-2 rounded-full bg-emerald-300 animate-ping" />
-          You Are Acting!
+    <div className="w-full max-w-md mx-auto h-full flex flex-col justify-between p-2 sm:p-3 overflow-hidden select-none">
+      {/* 1. COMPACT TOP HEADER WITH EMBEDDED DIGITAL TIMER */}
+      <div className="flex items-center justify-between gap-2 bg-zinc-950 text-white rounded-xl border-2 border-zinc-900 px-3 py-1 shadow-[2px_2px_0px_#000] shrink-0">
+        <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase text-emerald-400 tracking-wider">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+          Acting!
         </span>
-        <span className="text-xs font-bold text-zinc-600 bg-amber-100/90 border border-zinc-300 px-2.5 py-0.5 rounded-full">
-          Round {gameState.currentRound}/{gameState.totalRounds}
+
+        {/* Digital Stopwatch in Header */}
+        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-black border border-zinc-800">
+          <Timer className={`w-3.5 h-3.5 ${timerColor}`} />
+          <span className={`font-digital font-black text-2xl tracking-wider leading-none ${timerColor}`}>
+            {formattedTime}
+          </span>
+        </div>
+
+        <span className="text-[10px] font-bold bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded-full border border-zinc-700">
+          R{gameState.currentRound}/{gameState.totalRounds}
         </span>
       </div>
 
-      {/* Reverse Countdown Digital Timer & Meme Container */}
-      <div className="w-full space-y-3">
-        {/* Digital Countdown Timer */}
-        <DigitalTimer secondsRemaining={secondsRemaining} totalSeconds={60} />
+      {/* 2. AUTO-SCALED CENTER MEME GIF (Fills available space, NO SCROLLING) */}
+      <div className="flex-1 min-h-0 my-1.5 relative rounded-2xl border-3 border-zinc-900 bg-zinc-950 overflow-hidden shadow-[3px_3px_0px_#18181b] flex items-center justify-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={currentMeme.gifUrl}
+          alt=""
+          className="w-full h-full object-contain pointer-events-none"
+        />
 
-        {/* Meme Card with GIF and Secret Clue */}
-        <div className="neo-box overflow-hidden bg-white">
-          {/* Meme header with mute tag */}
-          <div className="bg-zinc-900 text-white px-3 py-2 flex items-center justify-between border-b-2 border-zinc-900">
-            <span className="font-extrabold text-xs uppercase tracking-wider text-amber-400 flex items-center gap-1">
-              <Eye className="w-3.5 h-3.5" /> Secret Meme Card
-            </span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded">
-              <VolumeX className="w-3 h-3 text-red-400" /> Muted
-            </span>
-          </div>
+        {/* Subtle Mute Tag Top Right */}
+        <span className="absolute top-2 right-2 bg-black/80 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/20 flex items-center gap-1">
+          <VolumeX className="w-3 h-3 text-red-400" /> Muted
+        </span>
 
-          {/* Meme GIF */}
-          <div className="relative aspect-4/3 bg-zinc-950 flex items-center justify-center overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={currentMeme.gifUrl}
-              alt=""
-              className="w-full h-full object-contain"
-            />
-          </div>
-
-          {/* Acting Guidance (No Meme Name) */}
-          <div className="p-3 bg-amber-50/70 border-t-2 border-zinc-900">
-            <div className="p-2.5 bg-white rounded-xl border border-zinc-300">
-              <p className="text-[11px] font-black text-red-600 uppercase tracking-wide">
-                🎭 Acting Instructions:
-              </p>
-              <p className="text-xs font-semibold text-zinc-800 leading-snug mt-0.5">
-                {currentMeme.clue || 'Mimic the facial expressions, body movements, and gestures of this meme without speaking!'}
-              </p>
-            </div>
-          </div>
+        {/* Acting Clue Overlay at Bottom */}
+        <div className="absolute bottom-2 inset-x-2 bg-black/85 backdrop-blur-xs text-amber-200 px-2.5 py-1 rounded-xl border border-white/20 text-center shadow-lg">
+          <p className="text-[11px] font-bold leading-tight line-clamp-2">
+            🎭 {currentMeme.clue || 'Act out the expressions and movements of this meme!'}
+          </p>
         </div>
       </div>
 
-      {/* "Someone Guessed?" Decision Area */}
-      <div className="w-full mt-5 p-4 rounded-2xl bg-white border-3 border-zinc-900 shadow-[4px_4px_0px_#18181b] text-center">
-        <h3 className="font-[family-name:var(--font-display)] font-black text-lg sm:text-xl text-zinc-900 uppercase tracking-tight">
-          Someone Guessed?
-        </h3>
-        <p className="text-xs text-zinc-500 font-medium mt-0.5 mb-3">
-          Did a friend shout out the right meme?
-        </p>
+      {/* 3. FIXED BOTTOM "SOMEONE GUESSED?" DECISION AREA (Always 100% visible, ZERO SCROLL) */}
+      <div className="bg-white rounded-2xl border-3 border-zinc-900 shadow-[3px_3px_0px_#18181b] p-2 sm:p-2.5 text-center shrink-0">
+        <div className="flex items-center justify-between px-1 mb-1.5">
+          <h3 className="font-[family-name:var(--font-display)] font-black text-xs sm:text-sm text-zinc-900 uppercase tracking-tight">
+            Someone Guessed?
+          </h3>
+          {noClickedFeedback && (
+            <span className="text-[10px] font-bold text-amber-600 animate-bounce">
+              Keep acting! 🎭
+            </span>
+          )}
+        </div>
 
-        {/* YES and NO Buttons */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Large Thumb-Friendly YES and NO Buttons */}
+        <div className="grid grid-cols-2 gap-2">
           {/* YES Button (Green) */}
           <button
             onClick={() => setShowPlayerSelector(true)}
-            className="neo-btn bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg py-3 rounded-xl flex items-center justify-center gap-2 shadow-[3px_3px_0px_#18181b]"
+            className="neo-btn bg-emerald-600 hover:bg-emerald-500 active:scale-98 text-white font-black text-sm sm:text-base py-2.5 sm:py-3 rounded-xl flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_#18181b]"
           >
-            <Check className="w-6 h-6 stroke-[3]" />
+            <Check className="w-4 h-4 stroke-[3.5]" />
             YES!
           </button>
 
           {/* NO Button (Red) */}
           <button
             onClick={handleNoClick}
-            className="neo-btn bg-red-600 hover:bg-red-500 text-white font-black text-lg py-3 rounded-xl flex items-center justify-center gap-2 shadow-[3px_3px_0px_#18181b]"
+            className="neo-btn bg-red-600 hover:bg-red-500 active:scale-98 text-white font-black text-sm sm:text-base py-2.5 sm:py-3 rounded-xl flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_#18181b]"
           >
-            <X className="w-6 h-6 stroke-[3]" />
+            <X className="w-4 h-4 stroke-[3.5]" />
             NO
           </button>
         </div>
-
-        {noClickedFeedback && (
-          <p className="mt-2.5 text-xs font-bold text-amber-700 animate-bounce">
-            Keep acting! Exaggerate your moves! 🎭
-          </p>
-        )}
       </div>
 
-      {/* Bottom Sheet / Modal to Select Who Guessed */}
+      {/* Bottom Sheet Modal to Select Winner */}
       {showPlayerSelector && (
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-end sm:items-center justify-center p-3 sm:p-4"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-end sm:items-center justify-center p-3 sm:p-4"
           onClick={() => setShowPlayerSelector(false)}
         >
           <div
@@ -140,47 +140,38 @@ export function ActorView({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Sheet Header */}
-            <div className="bg-emerald-600 text-white p-4 border-b-3 border-zinc-900 flex items-center justify-between">
+            <div className="bg-emerald-600 text-white p-3.5 border-b-3 border-zinc-900 flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-emerald-200 block">
                   Point Award
                 </span>
-                <h4 className="font-[family-name:var(--font-display)] font-black text-lg text-white">
+                <h4 className="font-[family-name:var(--font-display)] font-black text-base sm:text-lg text-white">
                   Who Guessed It Right?
                 </h4>
               </div>
               <button
                 onClick={() => setShowPlayerSelector(false)}
                 aria-label="Close dialog"
-                className="w-8 h-8 rounded-full bg-white text-zinc-900 border-2 border-zinc-900 flex items-center justify-center font-black hover:bg-zinc-100"
+                className="w-7 h-7 rounded-full bg-white text-zinc-900 border-2 border-zinc-900 flex items-center justify-center font-black hover:bg-zinc-100"
               >
                 <X className="w-4 h-4 stroke-[3]" />
               </button>
             </div>
 
             {/* Players List */}
-            <div className="p-4 bg-amber-50/50 max-h-72 overflow-y-auto space-y-2">
+            <div className="p-3 bg-amber-50/50 max-h-60 overflow-y-auto space-y-2">
               {guesserCandidates.length === 0 ? (
-                <div className="p-4 text-center text-xs text-zinc-600">
-                  <p>No other players joined yet!</p>
-                  <button
-                    onClick={() => {
-                      // Solo demo fallback
-                      if (gameState.players[0]) handleSelectWinner(gameState.players[0]);
-                    }}
-                    className="mt-2 text-xs font-bold text-emerald-700 underline"
-                  >
-                    Award point to self (Demo mode)
-                  </button>
+                <div className="p-4 text-center text-xs text-zinc-600 font-medium">
+                  No other players connected yet!
                 </div>
               ) : (
                 guesserCandidates.map((player) => (
                   <button
                     key={player.id}
                     onClick={() => handleSelectWinner(player)}
-                    className="w-full neo-btn bg-white hover:bg-emerald-50 text-left p-3 rounded-xl flex items-center justify-between group"
+                    className="w-full neo-btn bg-white hover:bg-emerald-50 text-left p-2.5 rounded-xl flex items-center justify-between group"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5">
                       <span className="text-2xl">{player.avatar || '😎'}</span>
                       <div>
                         <p className="font-extrabold text-sm text-zinc-900 group-hover:text-emerald-700">
@@ -191,7 +182,7 @@ export function ActorView({
                         </p>
                       </div>
                     </div>
-                    <span className="w-8 h-8 rounded-full bg-emerald-100 border-2 border-emerald-600 text-emerald-800 flex items-center justify-center font-black text-xs group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                    <span className="w-7 h-7 rounded-full bg-emerald-100 border-2 border-emerald-600 text-emerald-800 flex items-center justify-center font-black text-xs group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                       +1
                     </span>
                   </button>
@@ -200,10 +191,10 @@ export function ActorView({
             </div>
 
             {/* Cancel Button */}
-            <div className="p-3 bg-zinc-100 border-t-2 border-zinc-900">
+            <div className="p-2.5 bg-zinc-100 border-t-2 border-zinc-900">
               <button
                 onClick={() => setShowPlayerSelector(false)}
-                className="w-full py-2.5 rounded-xl bg-white border-2 border-zinc-900 text-zinc-800 font-bold text-xs hover:bg-zinc-50"
+                className="w-full py-2 rounded-xl bg-white border-2 border-zinc-900 text-zinc-800 font-bold text-xs hover:bg-zinc-50"
               >
                 Cancel (Keep Clock Running)
               </button>

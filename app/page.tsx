@@ -36,6 +36,8 @@ function DumbCharadesGame() {
   const [playerName, setPlayerName] = useState<string>('');
   const [playerAvatar, setPlayerAvatar] = useState<string>('😎');
   const [roomCodeInput, setRoomCodeInput] = useState<string>('');
+  const [invitedRoomCode, setInvitedRoomCode] = useState<string | null>(null);
+  const [showManualCodeInput, setShowManualCodeInput] = useState<boolean>(false);
 
   // Room & game state
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
@@ -50,7 +52,45 @@ function DumbCharadesGame() {
   // Realtime multiplayer manager (like roadsterdash via Supabase Realtime)
   const multiplayerRef = useRef<RoomMultiplayer | null>(null);
 
-  // Initialize player identity
+  // Direct join function (reusable for auto-join or 1-tap join)
+  const joinRoomDirect = useCallback((code: string, pId: string, pName: string, pAvatar: string) => {
+    if (!pName.trim()) {
+      setErrorMsg('Please enter your player name first!');
+      return;
+    }
+    setErrorMsg(null);
+    setIsLoading(true);
+
+    const cleanCode = code.toUpperCase().trim();
+    localStorage.setItem('dc_player_name', pName.trim());
+    localStorage.setItem('dc_player_avatar', pAvatar);
+
+    const joiningPlayer: Player = {
+      id: pId,
+      name: pName.trim(),
+      avatar: pAvatar,
+      score: 0,
+      joinedAt: Date.now(),
+      isHost: false,
+    };
+
+    try {
+      multiplayerRef.current?.destroy();
+      const mp = new RoomMultiplayer(cleanCode, joiningPlayer, {
+        onStateUpdate: (updated) => setGameState(updated),
+      });
+      mp.connect();
+      multiplayerRef.current = mp;
+      setCurrentRoomId(cleanCode);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error joining room';
+      setErrorMsg(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Initialize player identity & auto-join if link received
   useEffect(() => {
     let id = localStorage.getItem('dc_player_id');
     if (!id) {
@@ -59,18 +99,25 @@ function DumbCharadesGame() {
     }
     setPlayerId(id);
 
-    const savedName = localStorage.getItem('dc_player_name');
+    const savedName = localStorage.getItem('dc_player_name') || '';
     if (savedName) setPlayerName(savedName);
 
-    const savedAvatar = localStorage.getItem('dc_player_avatar');
+    const savedAvatar = localStorage.getItem('dc_player_avatar') || '😎';
     if (savedAvatar) setPlayerAvatar(savedAvatar);
 
     // Check URL for room code
     const queryRoom = searchParams.get('room');
     if (queryRoom) {
-      setRoomCodeInput(queryRoom.toUpperCase().trim());
+      const cleanCode = queryRoom.toUpperCase().trim();
+      setInvitedRoomCode(cleanCode);
+      setRoomCodeInput(cleanCode);
+
+      // If user already has a saved name, auto-join immediately!
+      if (savedName.trim() && !currentRoomId) {
+        joinRoomDirect(cleanCode, id, savedName.trim(), savedAvatar);
+      }
     }
-  }, [searchParams]);
+  }, [searchParams, currentRoomId, joinRoomDirect]);
 
   // Synchronize room state
   const fetchRoomState = useCallback(async (roomId: string) => {
@@ -300,6 +347,10 @@ function DumbCharadesGame() {
     multiplayerRef.current = null;
     setCurrentRoomId(null);
     setGameState(null);
+    setInvitedRoomCode(null);
+    if (typeof window !== 'undefined') {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   };
 
   const handleLeaveRoomConfirm = () => {
@@ -333,23 +384,40 @@ function DumbCharadesGame() {
     gameState?.memes[gameState.currentMemeIndex % (gameState.memes.length || 1)] ||
     CLASSIC_MEMES[0];
 
+  // Active game mode check to lock viewport and eliminate all scroll
+  const isPlayingGame = !!(
+    gameState &&
+    (gameState.status === 'acting' ||
+      gameState.status === 'countdown' ||
+      gameState.status === 'timeout' ||
+      gameState.status === 'round_won')
+  );
+
   return (
-    <div className="min-h-screen bg-[var(--cream)] text-zinc-900 flex flex-col justify-between selection:bg-red-600 selection:text-white">
+    <div
+      className={`min-h-[100dvh] ${
+        isPlayingGame ? 'h-[100dvh] max-h-[100dvh] overflow-hidden' : ''
+      } bg-[var(--cream)] text-zinc-900 flex flex-col justify-between selection:bg-red-600 selection:text-white`}
+    >
       {/* Floating Sound Toggle */}
       <SoundToggle />
 
-      {/* TOP DECORATIVE BANNER: Authentic Wavy Red & Cream Motif */}
-      <div className="w-full bg-wavy-checker border-b-4 border-zinc-900 py-3 sm:py-4 px-4 shadow-md relative overflow-hidden">
+      {/* TOP DECORATIVE BANNER: Single clown favicon / brand badge */}
+      <div
+        className={`w-full bg-wavy-checker border-b-2 sm:border-b-4 border-zinc-900 ${
+          isPlayingGame ? 'py-1 sm:py-1.5 px-3' : 'py-3 sm:py-4 px-4'
+        } shadow-md relative overflow-hidden shrink-0`}
+      >
         <div className="max-w-xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="w-9 h-9 rounded-xl bg-white border-2 border-zinc-900 shadow-[2px_2px_0px_#000] flex items-center justify-center text-xl">
+            <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white border-2 border-zinc-900 shadow-[2px_2px_0px_#000] flex items-center justify-center text-lg sm:text-xl shrink-0">
               🤡
             </span>
             <div>
-              <h1 className="font-[family-name:var(--font-display)] font-black text-lg sm:text-xl text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-none">
+              <h1 className="font-[family-name:var(--font-display)] font-black text-base sm:text-xl text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-none">
                 DUMB CHARADES
               </h1>
-              <span className="text-[10px] font-black tracking-widest text-amber-300 uppercase drop-shadow-sm">
+              <span className="text-[9px] sm:text-[10px] font-black tracking-widest text-amber-300 uppercase drop-shadow-xs">
                 Meme Edition
               </span>
             </div>
@@ -377,117 +445,217 @@ function DumbCharadesGame() {
       </div>
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 max-w-xl w-full mx-auto pb-10">
+      <main
+        className={`flex-1 min-h-0 max-w-xl w-full mx-auto ${
+          isPlayingGame ? 'overflow-hidden flex flex-col p-0' : 'pb-10 p-4 sm:p-6'
+        }`}
+      >
         {/* ========================================================================= */}
         {/* VIEW 1: LANDING PAGE (NO ACTIVE ROOM) */}
         {/* ========================================================================= */}
         {!gameState && (
           <div className="p-4 sm:p-6 space-y-6">
-            {/* Hero Card */}
-            <div className="neo-box bg-white p-5 text-center relative overflow-hidden">
-              <span className="inline-block px-3 py-1 bg-red-600 text-white text-xs font-black uppercase tracking-widest rounded-full mb-3 border-2 border-zinc-900 shadow-[2px_2px_0px_#000]">
-                🔥 The In-Person Party Game
-              </span>
-              <h2 className="font-[family-name:var(--font-display)] font-black text-2xl sm:text-3xl text-zinc-950 tracking-tight leading-tight">
-                Act Out The Internet&apos;s Most Legendary Memes!
-              </h2>
-              <p className="text-xs sm:text-sm text-zinc-600 mt-2 max-w-md mx-auto leading-relaxed">
-                Play on mobile with friends in real life. Turns go in alphabetical order—when your phone blinks green, it&apos;s your secret turn to act!
-              </p>
-            </div>
-
-            {/* Meme Hall of Fame Horizontal Scrolling Carousel */}
-            <MemeCarousel />
-
-            {/* Player Setup & Room Action Card */}
-            <div className="neo-box bg-white p-5 sm:p-6 space-y-4">
-              <h3 className="font-black text-sm uppercase tracking-wider text-zinc-900 border-b-2 border-zinc-200 pb-2 flex items-center gap-2">
-                <Smile className="w-4 h-4 text-amber-500" />
-                Step 1: Your Name & Avatar
-              </h3>
-
-              {/* Name Input */}
-              <div>
-                <label className="text-xs font-bold text-zinc-700 block mb-1">
-                  Enter Your Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Maya, Jordan, Sam..."
-                  value={playerName}
-                  onChange={(e) => setPlayerName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border-3 border-zinc-900 text-sm font-bold bg-zinc-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-600"
-                />
-              </div>
-
-              {/* Avatar Selector */}
-              <div>
-                <label className="text-xs font-bold text-zinc-700 block mb-1.5">
-                  Pick Your Meme Avatar
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {AVATAR_OPTIONS.map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => setPlayerAvatar(emoji)}
-                      className={`w-9 h-9 rounded-xl border-2 flex items-center justify-center text-lg transition-transform ${
-                        playerAvatar === emoji
-                          ? 'border-zinc-900 bg-amber-300 scale-110 shadow-[2px_2px_0px_#000]'
-                          : 'border-zinc-200 bg-zinc-50 hover:bg-zinc-100'
-                      }`}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
+            {/* INVITATION MODE: Directly launch with 1 click after receiving link */}
+            {invitedRoomCode ? (
+              <div className="neo-box bg-white p-5 sm:p-6 space-y-4">
+                <div className="text-center">
+                  <span className="inline-block px-3 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border-2 border-emerald-400 text-xs font-black uppercase tracking-wider mb-2">
+                    🎮 Game Invite
+                  </span>
+                  <h3 className="font-[family-name:var(--font-display)] font-black text-2xl text-zinc-950">
+                    You&apos;re Invited to Play!
+                  </h3>
+                  <p className="text-xs text-zinc-600 mt-1">
+                    Enter your name and pick an avatar to jump straight into the party.
+                  </p>
                 </div>
-              </div>
 
-              {errorMsg && (
-                <div className="p-2.5 rounded-xl bg-red-100 border-2 border-red-600 text-red-700 text-xs font-bold">
-                  {errorMsg}
-                </div>
-              )}
-
-              {/* Action Tabs / Buttons */}
-              <div className="pt-2 border-t-2 border-zinc-200 space-y-3">
-                <h4 className="font-black text-xs uppercase tracking-wider text-zinc-700">
-                  Step 2: Create or Join Room
-                </h4>
-
-                {/* Create Room Button */}
-                <button
-                  type="button"
-                  disabled={isLoading}
-                  onClick={handleCreateRoom}
-                  className="w-full neo-btn bg-red-600 hover:bg-red-500 text-white font-black text-base py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-[4px_4px_0px_#000]"
-                >
-                  <Play className="w-5 h-5 fill-white" />
-                  <span>Create Game Room</span>
-                </button>
-
-                {/* Join Room Form */}
-                <form onSubmit={handleJoinRoom} className="pt-2 flex gap-2">
+                {/* Name Input */}
+                <div>
+                  <label className="text-xs font-bold text-zinc-700 block mb-1">
+                    Your Name
+                  </label>
                   <input
                     type="text"
-                    maxLength={10}
-                    placeholder="Enter Room Code (e.g. MEME42)"
-                    value={roomCodeInput}
-                    onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
-                    className="flex-1 px-3 py-2.5 rounded-xl border-3 border-zinc-900 text-xs sm:text-sm font-mono font-bold uppercase bg-zinc-50"
+                    required
+                    autoFocus
+                    placeholder="e.g. Maya, Jordan, Alex..."
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border-3 border-zinc-900 text-sm font-bold bg-zinc-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
                   />
+                </div>
+
+                {/* Avatar Selector */}
+                <div>
+                  <label className="text-xs font-bold text-zinc-700 block mb-1.5">
+                    Choose Your Meme Avatar
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {AVATAR_OPTIONS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => setPlayerAvatar(emoji)}
+                        className={`w-9 h-9 rounded-xl border-2 flex items-center justify-center text-lg transition-transform ${
+                          playerAvatar === emoji
+                            ? 'border-zinc-900 bg-amber-300 scale-110 shadow-[2px_2px_0px_#000]'
+                            : 'border-zinc-200 bg-zinc-50 hover:bg-zinc-100'
+                        }`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {errorMsg && (
+                  <div className="p-2.5 rounded-xl bg-red-100 border-2 border-red-600 text-red-700 text-xs font-bold">
+                    {errorMsg}
+                  </div>
+                )}
+
+                <div className="space-y-2 pt-2">
                   <button
-                    type="submit"
+                    type="button"
                     disabled={isLoading}
-                    className="neo-btn bg-zinc-900 hover:bg-zinc-800 text-white font-black text-xs sm:text-sm px-4 rounded-xl flex items-center gap-1.5"
+                    onClick={() => joinRoomDirect(invitedRoomCode, playerId, playerName, playerAvatar)}
+                    className="w-full neo-btn bg-emerald-600 hover:bg-emerald-500 text-white font-black text-base py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-[4px_4px_0px_#000]"
                   >
-                    <span>Join</span>
-                    <ArrowRight className="w-4 h-4 stroke-[3]" />
+                    <Play className="w-5 h-5 fill-white" />
+                    <span>Join Game Now</span>
                   </button>
-                </form>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInvitedRoomCode(null);
+                      if (typeof window !== 'undefined') {
+                        window.history.replaceState({}, '', window.location.pathname);
+                      }
+                    }}
+                    className="w-full py-2 text-zinc-500 hover:text-zinc-800 text-xs font-bold"
+                  >
+                    Or create your own game instead
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <>
+                {/* Hero Card */}
+                <div className="neo-box bg-white p-5 text-center relative overflow-hidden">
+                  <span className="inline-block px-3 py-1 bg-red-600 text-white text-xs font-black uppercase tracking-widest rounded-full mb-3 border-2 border-zinc-900 shadow-[2px_2px_0px_#000]">
+                    🔥 The In-Person Party Game
+                  </span>
+                  <h2 className="font-[family-name:var(--font-display)] font-black text-2xl sm:text-3xl text-zinc-950 tracking-tight leading-tight">
+                    Act Out The Internet&apos;s Most Legendary Memes!
+                  </h2>
+                  <p className="text-xs sm:text-sm text-zinc-600 mt-2 max-w-md mx-auto leading-relaxed">
+                    Play on mobile with friends in real life. Turns go in alphabetical order—when your phone blinks green, it&apos;s your secret turn to act!
+                  </p>
+                </div>
+
+                {/* Meme Hall of Fame Horizontal Scrolling Carousel */}
+                <MemeCarousel />
+
+                {/* Player Setup & Room Action Card */}
+                <div className="neo-box bg-white p-5 sm:p-6 space-y-4">
+                  <h3 className="font-black text-sm uppercase tracking-wider text-zinc-900 border-b-2 border-zinc-200 pb-2 flex items-center gap-2">
+                    <Smile className="w-4 h-4 text-amber-500" />
+                    Step 1: Your Name & Avatar
+                  </h3>
+
+                  {/* Name Input */}
+                  <div>
+                    <label className="text-xs font-bold text-zinc-700 block mb-1">
+                      Enter Your Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Maya, Jordan, Sam..."
+                      value={playerName}
+                      onChange={(e) => setPlayerName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border-3 border-zinc-900 text-sm font-bold bg-zinc-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-600"
+                    />
+                  </div>
+
+                  {/* Avatar Selector */}
+                  <div>
+                    <label className="text-xs font-bold text-zinc-700 block mb-1.5">
+                      Pick Your Meme Avatar
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {AVATAR_OPTIONS.map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => setPlayerAvatar(emoji)}
+                          className={`w-9 h-9 rounded-xl border-2 flex items-center justify-center text-lg transition-transform ${
+                            playerAvatar === emoji
+                              ? 'border-zinc-900 bg-amber-300 scale-110 shadow-[2px_2px_0px_#000]'
+                              : 'border-zinc-200 bg-zinc-50 hover:bg-zinc-100'
+                          }`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {errorMsg && (
+                    <div className="p-2.5 rounded-xl bg-red-100 border-2 border-red-600 text-red-700 text-xs font-bold">
+                      {errorMsg}
+                    </div>
+                  )}
+
+                  {/* Direct Action: Create Game Room */}
+                  <div className="pt-2 border-t-2 border-zinc-200 space-y-3">
+                    <button
+                      type="button"
+                      disabled={isLoading}
+                      onClick={handleCreateRoom}
+                      className="w-full neo-btn bg-red-600 hover:bg-red-500 text-white font-black text-base py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-[4px_4px_0px_#000]"
+                    >
+                      <Play className="w-5 h-5 fill-white" />
+                      <span>Create Game Room</span>
+                    </button>
+
+                    {/* Secondary option only if user has a manual code */}
+                    <div className="pt-1 text-center">
+                      {!showManualCodeInput ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowManualCodeInput(true)}
+                          className="text-[11px] font-bold text-zinc-500 hover:text-zinc-800 underline"
+                        >
+                          Have a room code? Enter it here
+                        </button>
+                      ) : (
+                        <form onSubmit={handleJoinRoom} className="pt-2 flex gap-2">
+                          <input
+                            type="text"
+                            maxLength={10}
+                            placeholder="Enter Code (e.g. MEME42)"
+                            value={roomCodeInput}
+                            onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
+                            className="flex-1 px-3 py-2 rounded-xl border-2 border-zinc-900 text-xs font-mono font-bold uppercase bg-zinc-50"
+                          />
+                          <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="neo-btn bg-zinc-900 hover:bg-zinc-800 text-white font-black text-xs px-3 rounded-xl flex items-center gap-1"
+                          >
+                            <span>Join</span>
+                            <ArrowRight className="w-3.5 h-3.5 stroke-[3]" />
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 

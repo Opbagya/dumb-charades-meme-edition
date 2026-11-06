@@ -59,45 +59,37 @@ export function LobbyView({
           <span>Back to Home</span>
         </button>
 
-        <span className="text-xs font-bold text-zinc-500">
-          Room: <strong className="font-mono text-zinc-900">{gameState.roomId}</strong>
+        <span className="text-xs font-bold text-zinc-600 bg-amber-100 border border-zinc-300 px-2.5 py-0.5 rounded-full">
+          {gameState.players.length} {gameState.players.length === 1 ? 'Player' : 'Players'}
         </span>
       </div>
 
-      {/* Room Code Card with Retro Stamp */}
+      {/* Share Direct Link Card (No room code needed) */}
       <div className="neo-box bg-white p-4 sm:p-5 text-center relative overflow-hidden">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-300">
-            Game Room
-          </span>
-          <span className="text-xs font-bold text-zinc-500 flex items-center gap-1">
-            <Users className="w-3.5 h-3.5 text-zinc-700" />
-            {gameState.players.length} {gameState.players.length === 1 ? 'Player' : 'Players'}
-          </span>
-        </div>
+        <span className="inline-block text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-300 mb-2">
+          Party Lobby
+        </span>
 
-        <div className="my-2">
-          <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest block">
-            Room Code
-          </span>
-          <h2 className="font-mono font-black text-4xl sm:text-5xl text-zinc-950 tracking-wider">
-            {gameState.roomId}
-          </h2>
-        </div>
+        <h3 className="font-[family-name:var(--font-display)] font-black text-xl text-zinc-900">
+          Invite Your Friends
+        </h3>
+        <p className="text-xs text-zinc-500 font-medium mt-0.5 mb-3">
+          Share the link below. Friends join instantly with one tap!
+        </p>
 
         <button
           onClick={handleCopyLink}
-          className="w-full mt-3 py-2.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-black text-xs sm:text-sm border-2 border-zinc-900 shadow-[3px_3px_0px_#18181b] flex items-center justify-center gap-2 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
+          className="w-full py-3 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-black text-sm border-2 border-zinc-900 shadow-[3px_3px_0px_#18181b] flex items-center justify-center gap-2 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
         >
           {copied ? (
             <>
-              <Check className="w-4 h-4 text-emerald-800 stroke-[3]" />
-              <span>Link Copied to Clipboard!</span>
+              <Check className="w-5 h-5 text-emerald-800 stroke-[3]" />
+              <span>Link Copied! Send via WhatsApp / Chat</span>
             </>
           ) : (
             <>
-              <Share2 className="w-4 h-4 stroke-[2.5]" />
-              <span>Invite Friends (Share Link)</span>
+              <Share2 className="w-5 h-5 stroke-[2.5]" />
+              <span>Share Game Link with Friends</span>
             </>
           )}
         </button>
