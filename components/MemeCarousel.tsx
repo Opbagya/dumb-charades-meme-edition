@@ -103,25 +103,27 @@ export function MemeCarousel() {
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUpOrLeave}
           onMouseLeave={handleMouseUpOrLeave}
-          className="flex items-center gap-3.5 overflow-x-auto hide-scrollbar px-3 py-3 cursor-grab active:cursor-grabbing scroll-smooth snap-x snap-mandatory"
+          className="flex items-center gap-3.5 overflow-x-auto hide-scrollbar px-3 py-2.5 cursor-grab active:cursor-grabbing scroll-smooth snap-x snap-mandatory"
           style={{ scrollPaddingLeft: '12px', scrollPaddingRight: '12px' }}
         >
           {CLASSIC_MEMES.map((meme, idx) => (
             <div
               key={meme.id || idx}
-              onClick={() => setSelectedMeme(meme)}
-              className="group relative shrink-0 w-44 sm:w-52 h-28 sm:h-32 rounded-2xl bg-[#18191e] border-2 border-zinc-800 hover:border-[#ff5500] shadow-[0_4px_16px_rgba(0,0,0,0.2)] overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(255,85,0,0.3)] snap-start cursor-pointer flex items-center justify-center p-1.5"
+              onClick={() => {
+                if (!isDragging) {
+                  setSelectedMeme(meme);
+                }
+              }}
+              className="group flex-shrink-0 w-36 sm:w-44 aspect-square bg-zinc-950 rounded-2xl border border-zinc-800/80 hover:border-[#ff5500] overflow-hidden shadow-[2.5px_2.5px_0px_#121316] hover:shadow-[3.5px_3.5px_0px_#ff5500] hover:-translate-y-1 transition-all duration-200 snap-start cursor-pointer relative"
             >
-              {/* Full-Bleed Meme GIF - 100% Unobstructed Focus */}
-              <div className="w-full h-full rounded-xl overflow-hidden bg-black flex items-center justify-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={meme.gifUrl}
-                  alt=""
-                  loading="lazy"
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 pointer-events-none"
-                />
-              </div>
+              {/* Full-Bleed Meme GIF - Format directly like main branch (no inner padding, no heavy double border) */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={meme.gifUrl}
+                alt=""
+                loading="lazy"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
+              />
             </div>
           ))}
         </div>
@@ -135,7 +137,7 @@ export function MemeCarousel() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-3xl bg-[#18191e] border-3 border-[#ff5500] shadow-[0_0_30px_rgba(255,85,0,0.3)] p-4 text-center relative select-none animate-in zoom-in-95 duration-200"
+            className="w-full max-w-sm rounded-3xl bg-[#18191e] border-2 border-zinc-800 shadow-[0_0_30px_rgba(255,85,0,0.25)] p-4 text-center relative select-none animate-in zoom-in-95 duration-200"
           >
             <button
               onClick={() => setSelectedMeme(null)}
