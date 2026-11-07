@@ -772,14 +772,6 @@ function DumbCharadesGame() {
           </div>
         </div>
       )}
-
-      {/* FOOTER */}
-      <footer className="w-full py-2.5 text-center text-[11px] text-zinc-500 font-bold border-t border-zinc-200 select-none bg-white/60 shrink-0">
-        <div className="max-w-xl mx-auto flex items-center justify-between px-4">
-          <span>Dumb Charades: Meme Edition</span>
-          <span className="text-[#ff5500]">Powered by Supabase Realtime</span>
-        </div>
-      </footer>
     </div>
   );
 }
