@@ -1,8 +1,9 @@
 # Dumb Charades: Meme Edition 🤡
 
 ## Live Deployment & Repository
+* **Live Vercel Site:** [https://dumb-charades-meme-edition.vercel.app](https://dumb-charades-meme-edition.vercel.app)
 * **GitHub Repository:** [https://github.com/Opbagya/dumb-charades-meme-edition](https://github.com/Opbagya/dumb-charades-meme-edition)
-* **Live Cloudflare Site:** [https://dumb-charades-meme-edition.pages.dev](https://dumb-charades-meme-edition.pages.dev)
+* **Active Branches:** `dubdub-Dumb-Charades-meme-edition` and `main` (synchronized)
 
 ## Multiplayer Architecture (Same as Roadsterdash)
 * **Technology:** Supabase Realtime Broadcast & Presence channels (`@supabase/supabase-js`).
