@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { DeckMode, GameState, MemeItem, Player } from '@/types/game';
+import { GameState, Player } from '@/types/game';
 import { CLASSIC_MEMES } from '@/lib/memes';
 import { RoomMultiplayer } from '@/lib/multiplayer';
 import { MemeCarousel } from '@/components/MemeCarousel';
@@ -13,6 +13,7 @@ import { GuesserView } from '@/components/GuesserView';
 import { RedTimeoutAlert } from '@/components/RedTimeoutAlert';
 import { RoundWonModal } from '@/components/RoundWonModal';
 import { LeaderboardPodium } from '@/components/LeaderboardPodium';
+import { DubMascot } from '@/components/DubMascot';
 import {
   Users,
   Play,
@@ -23,14 +24,24 @@ import {
   HelpCircle,
   X,
   Volume2,
+  Trophy,
+  Zap,
 } from 'lucide-react';
 
 const AVATAR_OPTIONS = ['😎', '🤡', '🤪', '🐱', '🐸', '🐶', '🍕', '🚀', '🎭', '👑', '🔥', '👀'];
 
+const MEME_CATEGORIES = [
+  { name: '🔥 Viral Trending', count: '18 memes' },
+  { name: '🎬 Bollywood & Cinema', count: '14 memes' },
+  { name: '⚡ Classic Rage & 2010s', count: '16 memes' },
+  { name: '🐶 Animal Chaos', count: '12 memes' },
+  { name: '🎮 Gaming & Reactions', count: '16 memes' },
+];
+
 function DumbCharadesGame() {
   const searchParams = useSearchParams();
 
-  // Local user state
+  // Local player identity
   const [playerId, setPlayerId] = useState<string>('');
   const [playerName, setPlayerName] = useState<string>('');
   const [playerAvatar, setPlayerAvatar] = useState<string>('😎');
@@ -48,7 +59,7 @@ function DumbCharadesGame() {
   const [secondsRemaining, setSecondsRemaining] = useState<number>(60);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
 
-  // Realtime multiplayer manager (like roadsterdash via Supabase Realtime)
+  // Realtime multiplayer manager via Supabase
   const multiplayerRef = useRef<RoomMultiplayer | null>(null);
 
   // Direct join function (reusable for auto-join or 1-tap join)
@@ -111,7 +122,6 @@ function DumbCharadesGame() {
       setInvitedRoomCode(cleanCode);
       setRoomCodeInput(cleanCode);
 
-      // If user already has a saved name, auto-join immediately!
       if (savedName.trim() && !currentRoomId) {
         joinRoomDirect(cleanCode, id, savedName.trim(), savedAvatar);
       }
@@ -123,32 +133,22 @@ function DumbCharadesGame() {
     try {
       const res = await fetch(`/api/room/${roomId}`);
       if (!res.ok) return;
-      const data = await fetchRoomStateJson(res);
+      const data = await res.json();
       if (data?.room) {
         setGameState(data.room);
       }
     } catch {
-      // Background poll silently retry
+      // Polling fallback
     }
   }, []);
 
-  async function fetchRoomStateJson(res: Response) {
-    try {
-      return await res.json();
-    } catch {
-      return null;
-    }
-  }
-
-  // Room polling interval
+  // Polling fallback interval
   useEffect(() => {
     if (!currentRoomId) return;
-
     fetchRoomState(currentRoomId);
     const interval = setInterval(() => {
       fetchRoomState(currentRoomId);
     }, 1200);
-
     return () => clearInterval(interval);
   }, [currentRoomId, fetchRoomState]);
 
@@ -161,7 +161,6 @@ function DumbCharadesGame() {
       const secs = Math.max(0, Math.ceil(msLeft / 1000));
       setSecondsRemaining(secs);
 
-      // Timeout detection: Actor reports timeout to room
       if (secs <= 0) {
         const currentActorId = gameState.turnOrder[gameState.currentTurnIndex];
         if (currentActorId === playerId) {
@@ -180,14 +179,10 @@ function DumbCharadesGame() {
     };
   }, []);
 
-  // Execute Room actions via Supabase Realtime (with HTTP fallback)
-  const handleAction = async (
-    action: string,
-    extra: Record<string, unknown> = {}
-  ) => {
+  // Execute Room actions via Supabase Realtime
+  const handleAction = async (action: string, extra: Record<string, unknown> = {}) => {
     if (!currentRoomId) return;
 
-    // 1. Instant Realtime broadcast via Supabase (sub-50ms across phones)
     const mp = multiplayerRef.current;
     if (mp) {
       switch (action) {
@@ -212,7 +207,6 @@ function DumbCharadesGame() {
       }
     }
 
-    // 2. Also notify API route if running with server
     try {
       fetch(`/api/room/${currentRoomId}`, {
         method: 'POST',
@@ -239,7 +233,7 @@ function DumbCharadesGame() {
     setErrorMsg(null);
     setIsLoading(true);
 
-    const generatedCode = `MEME${Math.floor(100 + Math.random() * 900)}`;
+    const generatedCode = `DUB${Math.floor(100 + Math.random() * 900)}`;
     localStorage.setItem('dc_player_name', playerName.trim());
     localStorage.setItem('dc_player_avatar', playerAvatar);
 
@@ -253,17 +247,14 @@ function DumbCharadesGame() {
     };
 
     try {
-      // Initialize Supabase Realtime Broadcast room
       multiplayerRef.current?.destroy();
       const mp = new RoomMultiplayer(generatedCode, hostPlayer, {
         onStateUpdate: (updated) => setGameState(updated),
       });
       mp.connect();
       multiplayerRef.current = mp;
-
       setCurrentRoomId(generatedCode);
 
-      // Also register on local API if available
       fetch(`/api/room/${generatedCode}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -283,7 +274,7 @@ function DumbCharadesGame() {
     }
   };
 
-  // Join Room
+  // Join Room with input code
   const handleJoinRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!playerName.trim()) {
@@ -291,53 +282,10 @@ function DumbCharadesGame() {
       return;
     }
     if (!roomCodeInput.trim()) {
-      setErrorMsg('Please enter a 6-letter room code!');
+      setErrorMsg('Please enter a squad room code!');
       return;
     }
-    setErrorMsg(null);
-    setIsLoading(true);
-
-    const cleanCode = roomCodeInput.toUpperCase().trim();
-    localStorage.setItem('dc_player_name', playerName.trim());
-    localStorage.setItem('dc_player_avatar', playerAvatar);
-
-    const joiningPlayer: Player = {
-      id: playerId,
-      name: playerName.trim(),
-      avatar: playerAvatar,
-      score: 0,
-      joinedAt: Date.now(),
-      isHost: false,
-    };
-
-    try {
-      // Connect to Supabase Realtime Broadcast room
-      multiplayerRef.current?.destroy();
-      const mp = new RoomMultiplayer(cleanCode, joiningPlayer, {
-        onStateUpdate: (updated) => setGameState(updated),
-      });
-      mp.connect();
-      multiplayerRef.current = mp;
-
-      setCurrentRoomId(cleanCode);
-
-      // Also notify API route if available
-      fetch(`/api/room/${cleanCode}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'join',
-          playerId,
-          playerName: playerName.trim(),
-          playerAvatar,
-        }),
-      }).catch(() => {});
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error joining room';
-      setErrorMsg(msg);
-    } finally {
-      setIsLoading(false);
-    }
+    joinRoomDirect(roomCodeInput, playerId, playerName, playerAvatar);
   };
 
   // Leave room back to landing
@@ -354,7 +302,7 @@ function DumbCharadesGame() {
 
   const handleLeaveRoomConfirm = () => {
     if (gameState && gameState.status !== 'lobby' && gameState.status !== 'game_over') {
-      if (window.confirm('Are you sure you want to leave this game and return to the home screen?')) {
+      if (window.confirm('Are you sure you want to leave this match and return home?')) {
         handleLeaveRoom();
       }
     } else {
@@ -362,7 +310,6 @@ function DumbCharadesGame() {
     }
   };
 
-  // Determine current player object
   const currentPlayer = gameState?.players.find((p) => p.id === playerId) || {
     id: playerId,
     name: playerName || 'Player',
@@ -372,7 +319,6 @@ function DumbCharadesGame() {
     isHost: false,
   };
 
-  // Determine who the actor is
   const currentActorId =
     gameState && gameState.turnOrder.length > 0
       ? gameState.turnOrder[gameState.currentTurnIndex % gameState.turnOrder.length]
@@ -383,7 +329,6 @@ function DumbCharadesGame() {
     gameState?.memes[gameState.currentMemeIndex % (gameState.memes.length || 1)] ||
     CLASSIC_MEMES[0];
 
-  // Active game mode check to lock viewport and eliminate all scroll
   const isPlayingGame = !!(
     gameState &&
     (gameState.status === 'acting' ||
@@ -396,81 +341,83 @@ function DumbCharadesGame() {
     <div
       className={`min-h-[100dvh] ${
         isPlayingGame ? 'h-[100dvh] max-h-[100dvh] overflow-hidden' : ''
-      } bg-[var(--cream)] text-zinc-900 flex flex-col justify-between selection:bg-red-600 selection:text-white`}
+      } bg-dub-grid text-[#121316] flex flex-col justify-between selection:bg-[#ff5500] selection:text-white`}
     >
-      {/* TOP DECORATIVE BANNER: Upgraded stylized party title */}
-      <div
-        className={`w-full bg-wavy-checker border-b-2 sm:border-b-4 border-zinc-900 ${
-          isPlayingGame ? 'py-1 sm:py-1.5 px-3' : 'py-2.5 sm:py-3.5 px-4'
-        } shadow-md relative overflow-hidden shrink-0`}
+      {/* TOP DUBDUB STYLE BAR */}
+      <header
+        className={`w-full bg-[#121316] border-b-2 sm:border-b-3 border-zinc-950 ${
+          isPlayingGame ? 'py-1 sm:py-1.5 px-3' : 'py-2.5 sm:py-3 px-4'
+        } shadow-md relative overflow-hidden shrink-0 select-none`}
       >
         <div className="max-w-xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <span className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-amber-300 border-3 border-zinc-950 shadow-[3px_3px_0px_#000] flex items-center justify-center text-xl sm:text-2xl shrink-0 -rotate-3 hover:rotate-0 transition-transform">
-              🤡
-            </span>
+          <div className="flex items-center gap-2.5">
+            <DubMascot size="sm" />
             <div className="flex flex-col">
-              <h1 className="font-[family-name:var(--font-display)] text-lg sm:text-2xl text-white tracking-wide uppercase leading-none [text-shadow:_2px_2px_0px_#000,_-1px_-1px_0px_#000,_1px_-1px_0px_#000,_-1px_1px_0px_#000,_3px_3px_0px_#000]">
-                DUMB CHARADES
-              </h1>
-              <div className="mt-1 flex items-center">
-                <span className="inline-block px-1.5 py-0.2 bg-amber-300 text-zinc-950 rounded-md border-2 border-zinc-950 text-[9px] sm:text-[10px] font-[family-name:var(--font-display)] uppercase tracking-wider shadow-[1.5px_1.5px_0px_#000] -rotate-1">
-                  ⚡ MEME EDITION
+              <div className="flex items-center gap-2">
+                <h1 className="font-[family-name:var(--font-display)] text-lg sm:text-2xl text-white tracking-wide uppercase leading-none">
+                  DUMB CHARADES
+                </h1>
+                <span className="px-1.5 py-0.5 bg-[#ff5500] text-white rounded-md text-[9px] sm:text-[10px] font-black uppercase tracking-wider">
+                  MEME EDITION
                 </span>
               </div>
+              <span className="text-[10px] text-zinc-400 font-bold hidden sm:block">
+                The Single Real-Time Meme Charades Party Game
+              </span>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowHowToPlay(true)}
-              className="px-2.5 py-1.5 bg-white/95 rounded-xl border-2 border-zinc-900 text-xs font-black flex items-center gap-1 shadow-[2px_2px_0px_#000] hover:bg-zinc-100"
+              className="px-2.5 py-1.5 bg-[#18191e] hover:bg-[#242630] rounded-xl border border-zinc-700 text-xs font-black text-white flex items-center gap-1 shadow-sm active:translate-y-0.5"
             >
-              <HelpCircle className="w-3.5 h-3.5 text-red-600" />
+              <HelpCircle className="w-3.5 h-3.5 text-[#ffb800]" />
               <span>Rules</span>
             </button>
 
             {gameState && (
               <button
                 onClick={handleLeaveRoomConfirm}
-                className="px-3 py-1.5 bg-zinc-900 text-white rounded-xl border-2 border-zinc-900 text-xs font-black shadow-[2px_2px_0px_#000] hover:bg-zinc-800 active:translate-x-0.5 active:translate-y-0.5 transition-transform flex items-center gap-1"
+                className="px-3 py-1.5 bg-red-600/90 hover:bg-red-600 text-white rounded-xl border border-red-500 text-xs font-black shadow-sm active:translate-y-0.5 transition-transform"
               >
-                <span>← Exit</span>
+                <span>Exit</span>
               </button>
             )}
           </div>
         </div>
-      </div>
+      </header>
 
       {/* MAIN CONTENT AREA */}
       <main
         className={`flex-1 min-h-0 max-w-xl w-full mx-auto ${
-          isPlayingGame ? 'overflow-hidden flex flex-col p-0' : 'pb-10 p-4 sm:p-6'
+          isPlayingGame ? 'overflow-hidden flex flex-col p-0' : 'pb-10 p-3.5 sm:p-5'
         }`}
       >
         {/* ========================================================================= */}
         {/* VIEW 1: LANDING PAGE (NO ACTIVE ROOM) */}
         {/* ========================================================================= */}
         {!gameState && (
-          <div className="p-4 sm:p-6 space-y-6">
+          <div className="space-y-4">
             {/* INVITATION MODE: Directly launch with 1 click after receiving link */}
             {invitedRoomCode ? (
-              <div className="neo-box bg-white p-5 sm:p-6 space-y-4">
-                <div className="text-center">
-                  <span className="inline-block px-3 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border-2 border-emerald-400 text-xs font-black uppercase tracking-wider mb-2">
-                    🎮 Game Invite
+              <div className="dub-card-orange-glow p-5 sm:p-6 space-y-4 text-center">
+                <DubMascot size="md" withSpeechBubble="JOIN SQUAD! 🚀" className="mx-auto" />
+                <div>
+                  <span className="inline-block px-3 py-0.5 rounded-full bg-[#ff5500]/20 text-[#ff7a1a] border border-[#ff5500]/40 text-xs font-black uppercase tracking-wider mb-1">
+                    🎮 Squad Invite #{invitedRoomCode}
                   </span>
-                  <h3 className="font-[family-name:var(--font-display)] font-black text-2xl text-zinc-950">
+                  <h3 className="font-[family-name:var(--font-display)] font-black text-2xl text-white">
                     You&apos;re Invited to Play!
                   </h3>
-                  <p className="text-xs text-zinc-600 mt-1">
-                    Enter your name and pick an avatar to jump straight into the party.
+                  <p className="text-xs text-zinc-400 mt-1">
+                    Enter your name and pick your meme avatar to jump into the match.
                   </p>
                 </div>
 
                 {/* Name Input */}
-                <div>
-                  <label className="text-xs font-bold text-zinc-700 block mb-1">
+                <div className="text-left">
+                  <label className="text-xs font-bold text-zinc-300 block mb-1">
                     Your Name
                   </label>
                   <input
@@ -480,13 +427,13 @@ function DumbCharadesGame() {
                     placeholder="e.g. Maya, Jordan, Alex..."
                     value={playerName}
                     onChange={(e) => setPlayerName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border-3 border-zinc-900 text-sm font-bold bg-zinc-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                    className="w-full px-3.5 py-2.5 rounded-xl border-2 border-zinc-700 text-sm font-bold bg-[#121316] text-white focus:outline-hidden focus:border-[#ff5500]"
                   />
                 </div>
 
                 {/* Avatar Selector */}
-                <div>
-                  <label className="text-xs font-bold text-zinc-700 block mb-1.5">
+                <div className="text-left">
+                  <label className="text-xs font-bold text-zinc-300 block mb-1.5">
                     Choose Your Meme Avatar
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -495,10 +442,10 @@ function DumbCharadesGame() {
                         key={emoji}
                         type="button"
                         onClick={() => setPlayerAvatar(emoji)}
-                        className={`w-9 h-9 rounded-xl border-2 flex items-center justify-center text-lg transition-transform ${
+                        className={`w-9 h-9 rounded-xl border flex items-center justify-center text-lg transition-transform ${
                           playerAvatar === emoji
-                            ? 'border-zinc-900 bg-amber-300 scale-110 shadow-[2px_2px_0px_#000]'
-                            : 'border-zinc-200 bg-zinc-50 hover:bg-zinc-100'
+                            ? 'border-[#ff5500] bg-[#ff5500]/30 scale-110 shadow-[0_0_10px_rgba(255,85,0,0.5)]'
+                            : 'border-zinc-800 bg-[#121316] hover:bg-zinc-800'
                         }`}
                       >
                         {emoji}
@@ -508,7 +455,7 @@ function DumbCharadesGame() {
                 </div>
 
                 {errorMsg && (
-                  <div className="p-2.5 rounded-xl bg-red-100 border-2 border-red-600 text-red-700 text-xs font-bold">
+                  <div className="p-2.5 rounded-xl bg-red-500/20 border border-red-500 text-red-300 text-xs font-bold">
                     {errorMsg}
                   </div>
                 )}
@@ -518,10 +465,10 @@ function DumbCharadesGame() {
                     type="button"
                     disabled={isLoading}
                     onClick={() => joinRoomDirect(invitedRoomCode, playerId, playerName, playerAvatar)}
-                    className="w-full neo-btn bg-emerald-600 hover:bg-emerald-500 text-white font-black text-base py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-[4px_4px_0px_#000]"
+                    className="w-full py-3.5 rounded-2xl dub-btn-orange text-base font-black flex items-center justify-center gap-2"
                   >
                     <Play className="w-5 h-5 fill-white" />
-                    <span>Join Game Now</span>
+                    <span>Join Squad Now</span>
                   </button>
 
                   <button
@@ -532,41 +479,71 @@ function DumbCharadesGame() {
                         window.history.replaceState({}, '', window.location.pathname);
                       }
                     }}
-                    className="w-full py-2 text-zinc-500 hover:text-zinc-800 text-xs font-bold"
+                    className="w-full py-2 text-zinc-400 hover:text-white text-xs font-bold"
                   >
-                    Or create your own game instead
+                    Or create your own squad instead
                   </button>
                 </div>
               </div>
             ) : (
               <>
-                {/* Hero Card */}
-                <div className="neo-box bg-white p-5 text-center relative overflow-hidden">
-                  <span className="inline-block px-3 py-1 bg-red-600 text-white text-xs font-black uppercase tracking-widest rounded-full mb-3 border-2 border-zinc-900 shadow-[2px_2px_0px_#000]">
-                    🔥 The In-Person Party Game
-                  </span>
-                  <h2 className="font-[family-name:var(--font-display)] font-black text-2xl sm:text-3xl text-zinc-950 tracking-tight leading-tight">
+                {/* DubDub Signature Hero Card */}
+                <div className="dub-card-charcoal pt-6 pb-4 px-4 text-center relative overflow-visible">
+                  <div className="flex justify-center mb-1.5">
+                    <DubMascot size="lg" withSpeechBubble="NO TALKING! 🤫" />
+                  </div>
+
+                  <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#ff5500]/20 border border-[#ff5500]/40 text-[#ff7a1a] text-[10px] font-black uppercase tracking-widest mb-1.5">
+                    <span>⚡ CHOOSE • SWIPE • ACT • WIN</span>
+                  </div>
+
+                  <h2 className="font-[family-name:var(--font-display)] font-black text-2xl sm:text-3xl text-white tracking-tight leading-tight">
                     Act Out The Internet&apos;s Most Legendary Memes!
                   </h2>
-                  <p className="text-xs sm:text-sm text-zinc-600 mt-2 max-w-md mx-auto leading-relaxed">
-                    Play on mobile with friends in real life. Turns go in alphabetical order—when your phone blinks green, it&apos;s your secret turn to act!
+                  <p className="text-xs sm:text-sm text-zinc-400 mt-1.5 max-w-md mx-auto leading-relaxed">
+                    Play in person with your friends. Secret turn notifications, 60s timer, live duel race tracks, and 3D podiums.
                   </p>
                 </div>
 
-                {/* Meme Hall of Fame Horizontal Scrolling Carousel */}
+                {/* Meme Vault Carousel Preview */}
                 <MemeCarousel />
 
-                {/* Player Setup & Room Action Card */}
-                <div className="neo-box bg-white p-5 sm:p-6 space-y-4">
-                  <h3 className="font-black text-sm uppercase tracking-wider text-zinc-900 border-b-2 border-zinc-200 pb-2 flex items-center gap-2">
-                    <Smile className="w-4 h-4 text-amber-500" />
-                    Step 1: Your Name & Avatar
+                {/* Categories Included in this Single Game */}
+                <div className="dub-card-charcoal p-3.5 text-left">
+                  <div className="flex items-center justify-between mb-2 px-1">
+                    <span className="text-[11px] font-black uppercase text-zinc-300 flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-[#ffb800]" />
+                      Included Meme Decks
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {MEME_CATEGORIES.map((cat) => (
+                      <div
+                        key={cat.name}
+                        className="px-2.5 py-2 rounded-xl bg-[#121316] border border-zinc-800 text-left"
+                      >
+                        <span className="text-[11px] font-black text-white block truncate">
+                          {cat.name}
+                        </span>
+                        <span className="text-[9px] text-zinc-500 font-bold block">
+                          {cat.count}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Player Setup & Room Actions */}
+                <div className="dub-card-cream p-4 sm:p-5 space-y-3.5">
+                  <h3 className="font-black text-xs uppercase tracking-wider text-zinc-900 border-b border-zinc-200 pb-2 flex items-center gap-1.5">
+                    <Smile className="w-4 h-4 text-[#ff5500]" />
+                    <span>Step 1: Your Name & Avatar</span>
                   </h3>
 
                   {/* Name Input */}
                   <div>
                     <label className="text-xs font-bold text-zinc-700 block mb-1">
-                      Enter Your Name
+                      Your Name
                     </label>
                     <input
                       type="text"
@@ -574,14 +551,14 @@ function DumbCharadesGame() {
                       placeholder="e.g. Maya, Jordan, Sam..."
                       value={playerName}
                       onChange={(e) => setPlayerName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border-3 border-zinc-900 text-sm font-bold bg-zinc-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-600"
+                      className="w-full px-3.5 py-2.5 rounded-xl border-2 border-zinc-900 text-sm font-bold bg-zinc-50 focus:bg-white focus:outline-hidden focus:border-[#ff5500]"
                     />
                   </div>
 
                   {/* Avatar Selector */}
                   <div>
                     <label className="text-xs font-bold text-zinc-700 block mb-1.5">
-                      Pick Your Meme Avatar
+                      Choose Your Avatar
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {AVATAR_OPTIONS.map((emoji) => (
@@ -591,8 +568,8 @@ function DumbCharadesGame() {
                           onClick={() => setPlayerAvatar(emoji)}
                           className={`w-9 h-9 rounded-xl border-2 flex items-center justify-center text-lg transition-transform ${
                             playerAvatar === emoji
-                              ? 'border-zinc-900 bg-amber-300 scale-110 shadow-[2px_2px_0px_#000]'
-                              : 'border-zinc-200 bg-zinc-50 hover:bg-zinc-100'
+                              ? 'border-zinc-950 bg-[#ff5500] text-white scale-110 shadow-[2px_2px_0px_#121316]'
+                              : 'border-zinc-300 bg-zinc-100 hover:bg-zinc-200'
                           }`}
                         >
                           {emoji}
@@ -602,54 +579,58 @@ function DumbCharadesGame() {
                   </div>
 
                   {errorMsg && (
-                    <div className="p-2.5 rounded-xl bg-red-100 border-2 border-red-600 text-red-700 text-xs font-bold">
+                    <div className="p-2.5 rounded-xl bg-red-100 border border-red-500 text-red-700 text-xs font-bold">
                       {errorMsg}
                     </div>
                   )}
 
-                  {/* Direct Action: Create Game Room */}
-                  <div className="pt-2 border-t-2 border-zinc-200 space-y-3">
+                  {/* Step 2 Actions */}
+                  <div className="pt-2 space-y-2">
+                    <h3 className="font-black text-xs uppercase tracking-wider text-zinc-900 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#ff5500]" />
+                      <span>Step 2: Choose Room Action</span>
+                    </h3>
+
                     <button
                       type="button"
                       disabled={isLoading}
                       onClick={handleCreateRoom}
-                      className="w-full neo-btn bg-red-600 hover:bg-red-500 text-white font-black text-base py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-[4px_4px_0px_#000]"
+                      className="w-full py-3.5 px-4 rounded-xl dub-btn-orange text-sm font-black flex items-center justify-center gap-2"
                     >
-                      <Play className="w-5 h-5 fill-white" />
-                      <span>Create Game Room</span>
+                      <Flame className="w-4 h-4 fill-white" />
+                      <span>Create New Squad Room</span>
                     </button>
 
-                    {/* Secondary option only if user has a manual code */}
-                    <div className="pt-1 text-center">
-                      {!showManualCodeInput ? (
-                        <button
-                          type="button"
-                          onClick={() => setShowManualCodeInput(true)}
-                          className="text-[11px] font-bold text-zinc-500 hover:text-zinc-800 underline"
-                        >
-                          Have a room code? Enter it here
-                        </button>
-                      ) : (
-                        <form onSubmit={handleJoinRoom} className="pt-2 flex gap-2">
+                    {!showManualCodeInput ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowManualCodeInput(true)}
+                        className="w-full py-2.5 px-4 rounded-xl dub-btn-dark text-xs font-black flex items-center justify-center gap-1.5"
+                      >
+                        <Users className="w-3.5 h-3.5" />
+                        <span>Join Existing Squad with Code</span>
+                      </button>
+                    ) : (
+                      <form onSubmit={handleJoinRoom} className="space-y-2 pt-1 animate-in fade-in">
+                        <div className="flex gap-2">
                           <input
                             type="text"
-                            maxLength={10}
-                            placeholder="Enter Code (e.g. MEME42)"
+                            placeholder="e.g. DUB482"
                             value={roomCodeInput}
                             onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
-                            className="flex-1 px-3 py-2 rounded-xl border-2 border-zinc-900 text-xs font-mono font-bold uppercase bg-zinc-50"
+                            maxLength={8}
+                            className="flex-1 px-3 py-2 rounded-xl border-2 border-zinc-900 text-xs font-mono font-black uppercase text-center bg-zinc-50 focus:bg-white"
                           />
                           <button
                             type="submit"
                             disabled={isLoading}
-                            className="neo-btn bg-zinc-900 hover:bg-zinc-800 text-white font-black text-xs px-3 rounded-xl flex items-center gap-1"
+                            className="px-4 py-2 rounded-xl dub-btn-green text-xs font-black"
                           >
-                            <span>Join</span>
-                            <ArrowRight className="w-3.5 h-3.5 stroke-[3]" />
+                            Join
                           </button>
-                        </form>
-                      )}
-                    </div>
+                        </div>
+                      </form>
+                    )}
                   </div>
                 </div>
               </>
@@ -658,7 +639,7 @@ function DumbCharadesGame() {
         )}
 
         {/* ========================================================================= */}
-        {/* VIEW 2: ACTIVE ROOM IN LOBBY */}
+        {/* VIEW 2: LOBBY VIEW */}
         {/* ========================================================================= */}
         {gameState && gameState.status === 'lobby' && (
           <LobbyView
@@ -670,15 +651,14 @@ function DumbCharadesGame() {
         )}
 
         {/* ========================================================================= */}
-        {/* VIEW 3: COUNTDOWN BUFFER (3-SECOND BUFFER / GREEN BLINK ON ACTOR PHONE) */}
+        {/* VIEW 3: 3-SECOND COUNTDOWN TURN ALERT */}
         {/* ========================================================================= */}
         {gameState && gameState.status === 'countdown' && (
           <GreenTurnAlert
             isActor={isCurrentActor}
-            actorName={currentActor?.name || 'Player'}
+            actorName={currentActor?.name || 'Someone'}
             countdownEndsAt={gameState.countdownEndsAt}
             onCountdownComplete={() => {
-              // Actor signals start of 60s acting
               if (isCurrentActor) {
                 handleAction('start_acting');
               }
@@ -687,38 +667,27 @@ function DumbCharadesGame() {
         )}
 
         {/* ========================================================================= */}
-        {/* VIEW 4: ACTIVE 60-SECOND ACTING CHARADES ROUND */}
+        {/* VIEW 4: ACTIVE CHARADES ROUND (ACTOR VIEW vs GUESSER VIEW) */}
         {/* ========================================================================= */}
         {gameState && gameState.status === 'acting' && (
-          <>
-            {isCurrentActor ? (
-              <ActorView
-                gameState={gameState}
-                currentMeme={currentMeme}
-                secondsRemaining={secondsRemaining}
-                onRecordGuess={(winnerId) => handleAction('guess', { winnerId })}
-                onTimeExpired={() => handleAction('timeout')}
-              />
-            ) : (
-              <GuesserView gameState={gameState} secondsRemaining={secondsRemaining} />
-            )}
-          </>
+          isCurrentActor ? (
+            <ActorView
+              gameState={gameState}
+              currentMeme={currentMeme}
+              secondsRemaining={secondsRemaining}
+              onRecordGuess={(winnerId) => handleAction('guess', { winnerId })}
+              onTimeExpired={() => handleAction('timeout')}
+            />
+          ) : (
+            <GuesserView
+              gameState={gameState}
+              secondsRemaining={secondsRemaining}
+            />
+          )
         )}
 
         {/* ========================================================================= */}
-        {/* VIEW 5: TIME'S UP / TIMEOUT ALERT (RED BLINKING) */}
-        {/* ========================================================================= */}
-        {gameState && gameState.status === 'timeout' && (
-          <RedTimeoutAlert
-            gameState={gameState}
-            isActor={isCurrentActor}
-            onRecordLateGuess={(winnerId) => handleAction('guess', { winnerId })}
-            onNextTurn={() => handleAction('next_turn')}
-          />
-        )}
-
-        {/* ========================================================================= */}
-        {/* VIEW 6: ROUND WON (CONFETTI & POINT REVEAL) */}
+        {/* VIEW 5: ROUND WON OVERLAY MODAL */}
         {/* ========================================================================= */}
         {gameState && gameState.status === 'round_won' && (
           <RoundWonModal
@@ -730,111 +699,128 @@ function DumbCharadesGame() {
         )}
 
         {/* ========================================================================= */}
+        {/* VIEW 6: TIMEOUT ALERT OVERLAY */}
+        {/* ========================================================================= */}
+        {gameState && gameState.status === 'timeout' && (
+          <RedTimeoutAlert
+            gameState={gameState}
+            isActor={isCurrentActor}
+            onRecordLateGuess={(winnerId) => handleAction('guess', { winnerId })}
+            onNextTurn={() => handleAction('next_turn')}
+          />
+        )}
+
+        {/* ========================================================================= */}
         {/* VIEW 7: GAME OVER / FINAL PODIUM */}
         {/* ========================================================================= */}
         {gameState && gameState.status === 'game_over' && (
           <LeaderboardPodium
             gameState={gameState}
             onRestart={() => handleAction('restart')}
-            onLeaveRoom={handleLeaveRoom}
+            onLeaveRoom={handleLeaveRoomConfirm}
           />
         )}
       </main>
 
-      {/* HOW TO PLAY MODAL */}
+      {/* HOW TO PLAY / RULES MODAL */}
       {showHowToPlay && (
         <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 select-none"
           onClick={() => setShowHowToPlay(false)}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 select-none animate-in fade-in"
         >
           <div
-            className="w-full max-w-sm bg-white rounded-3xl border-4 border-zinc-900 shadow-[8px_8px_0px_#000] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-3xl bg-[#18191e] border-3 border-[#ff5500] shadow-[0_0_35px_rgba(255,85,0,0.35)] p-5 text-left text-white animate-in zoom-in-95"
           >
-            <div className="bg-red-600 text-white p-3.5 border-b-3 border-zinc-900 flex items-center justify-between">
-              <span className="font-black text-xs uppercase tracking-wider">
-                How to Play
-              </span>
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3 mb-3">
+              <div className="flex items-center gap-2">
+                <DubMascot size="sm" />
+                <h3 className="font-[family-name:var(--font-display)] font-black text-xl text-white">
+                  How to Play Dub Charades
+                </h3>
+              </div>
               <button
                 onClick={() => setShowHowToPlay(false)}
-                aria-label="Close dialog"
-                className="w-7 h-7 rounded-full bg-white text-zinc-950 border-2 border-zinc-900 flex items-center justify-center font-black"
+                className="w-7 h-7 rounded-full bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center"
               >
                 <X className="w-4 h-4 stroke-[3]" />
               </button>
             </div>
 
-            <div className="p-4 bg-amber-50 space-y-3 text-xs text-zinc-800 font-medium">
-              <div className="flex gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-zinc-900 text-white font-black flex items-center justify-center shrink-0 text-[10px]">
+            <div className="space-y-3 text-xs">
+              <div className="p-2.5 rounded-xl bg-[#121316] border border-zinc-800 flex items-start gap-2.5">
+                <span className="w-6 h-6 rounded-full bg-[#ff5500] text-white flex items-center justify-center font-black shrink-0">
                   1
                 </span>
-                <p>
-                  <strong>Alphabetical Turn Order:</strong> The app orders players A &rarr; Z. Everyone takes turns acting!
-                </p>
+                <div>
+                  <span className="font-black text-white block">Gather in Real Life</span>
+                  <p className="text-zinc-400 mt-0.5">
+                    Share your squad link with friends in the same room. Everyone joins on their own phone!
+                  </p>
+                </div>
               </div>
 
-              <div className="flex gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black flex items-center justify-center shrink-0 text-[10px]">
+              <div className="p-2.5 rounded-xl bg-[#121316] border border-zinc-800 flex items-start gap-2.5">
+                <span className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center font-black shrink-0">
                   2
                 </span>
-                <p>
-                  <strong>Green Phone Alert:</strong> When your turn arrives, your phone blinks green for 3 seconds. Turn your screen away from friends!
-                </p>
+                <div>
+                  <span className="font-black text-emerald-400 block">Watch for Green Blink</span>
+                  <p className="text-zinc-400 mt-0.5">
+                    Turns rotate alphabetically (A → Z). When your screen pulses green, turn your phone away—you are the Actor!
+                  </p>
+                </div>
               </div>
 
-              <div className="flex gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-amber-500 text-zinc-950 font-black flex items-center justify-center shrink-0 text-[10px]">
+              <div className="p-2.5 rounded-xl bg-[#121316] border border-zinc-800 flex items-start gap-2.5">
+                <span className="w-6 h-6 rounded-full bg-[#ffb800] text-zinc-950 flex items-center justify-center font-black shrink-0">
                   3
                 </span>
-                <p>
-                  <strong>1-Minute Charades:</strong> You have 60 seconds to act out the secret meme GIF! Other players shout guesses out loud.
-                </p>
+                <div>
+                  <span className="font-black text-[#ffb800] block">Act Without Talking</span>
+                  <p className="text-zinc-400 mt-0.5">
+                    Act out the expressions and movements of the secret meme within 60 seconds. Strictly no talking or whispering!
+                  </p>
+                </div>
               </div>
 
-              <div className="flex gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-red-600 text-white font-black flex items-center justify-center shrink-0 text-[10px]">
+              <div className="p-2.5 rounded-xl bg-[#121316] border border-zinc-800 flex items-start gap-2.5">
+                <span className="w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center font-black shrink-0">
                   4
                 </span>
-                <p>
-                  <strong>Someone Guessed?</strong> Tap <strong>YES (Green)</strong> and pick their name! Their phone explodes with confetti and +1 point. If time expires, the screen blinks RED!
-                </p>
+                <div>
+                  <span className="font-black text-purple-300 block">Shout & Win Points</span>
+                  <p className="text-zinc-400 mt-0.5">
+                    Guessers shout answers out loud. When someone gets it, the Actor taps &ldquo;YES! GUESSED&rdquo; and awards the point!
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="p-3 bg-zinc-100 border-t-2 border-zinc-900">
-              <button
-                onClick={() => setShowHowToPlay(false)}
-                className="w-full py-2 rounded-xl bg-zinc-900 text-white font-black text-xs"
-              >
-                Let&apos;s Play!
-              </button>
-            </div>
+            <button
+              onClick={() => setShowHowToPlay(false)}
+              className="mt-4 w-full py-2.5 rounded-xl dub-btn-orange text-xs font-black"
+            >
+              Got It, Let&apos;s Play!
+            </button>
           </div>
         </div>
       )}
 
-      {/* Footer */}
-      <footer className="w-full bg-zinc-900 border-t-3 border-zinc-950 py-3 text-center text-zinc-400 text-xs">
-        <p className="font-bold">
-          Dumb Charades: Meme Edition • Mobile Party Game
-        </p>
+      {/* FOOTER */}
+      <footer className="w-full py-2.5 text-center text-[11px] text-zinc-500 font-bold border-t border-zinc-200 select-none bg-white/60 shrink-0">
+        <div className="max-w-xl mx-auto flex items-center justify-between px-4">
+          <span>Dumb Charades: Meme Edition</span>
+          <span className="text-[#ff5500]">Powered by Supabase Realtime</span>
+        </div>
       </footer>
     </div>
   );
 }
 
-export default function Home() {
+export default function Page() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-[#faf5ed] flex items-center justify-center p-6 text-center">
-          <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="min-h-screen bg-[#121316] flex items-center justify-center text-white font-black text-sm">Loading Squad...</div>}>
       <DumbCharadesGame />
     </Suspense>
   );

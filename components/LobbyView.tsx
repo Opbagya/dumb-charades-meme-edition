@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from 'react';
-import { DeckMode, GameState, Player } from '@/types/game';
-import { Copy, Check, Users, Play, Sparkles, Share2, Crown, SlidersHorizontal, Settings2, ArrowLeft } from 'lucide-react';
+import { GameState, Player } from '@/types/game';
+import { Check, Users, Play, Share2, ArrowLeft } from 'lucide-react';
+import { DubMascot } from './DubMascot';
 
 interface LobbyViewProps {
   gameState: GameState;
@@ -26,8 +27,8 @@ export function LobbyView({
     try {
       if (navigator.share) {
         await navigator.share({
-          title: 'Join Dumb Charades: Meme Edition!',
-          text: `Join our Dumb Charades game! Room code: ${gameState.roomId}`,
+          title: 'Join Dub Charades: Meme Edition Squad!',
+          text: `Join our meme squad! Room: ${gameState.roomId}`,
           url,
         });
       } else {
@@ -42,153 +43,164 @@ export function LobbyView({
     }
   };
 
-  // Preview alphabetical turn order
+  // Compute alphabetical turn order
   const alphabeticalPlayers = [...gameState.players].sort((a, b) =>
     a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: 'base' })
   );
 
   return (
-    <div className="w-full max-w-md mx-auto px-4 py-4 space-y-4">
-      {/* Top Back Navigation */}
+    <div className="w-full max-w-md mx-auto px-3 py-3 space-y-3.5 select-none animate-in fade-in duration-200">
+      {/* Top Header Bar */}
       <div className="flex items-center justify-between">
         <button
           onClick={onLeaveRoom}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border-2 border-zinc-900 text-xs font-black text-zinc-900 shadow-[2px_2px_0px_#18181b] hover:bg-zinc-100 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border-2 border-zinc-900 text-xs font-black text-zinc-900 shadow-[2px_2px_0px_#121316] hover:bg-zinc-100 active:translate-y-0.5 transition-transform"
         >
-          <ArrowLeft className="w-4 h-4 stroke-[3]" />
-          <span>Back to Home</span>
+          <ArrowLeft className="w-3.5 h-3.5 stroke-[3]" />
+          <span>Exit Room</span>
         </button>
 
-        <span className="text-xs font-bold text-zinc-600 bg-amber-100 border border-zinc-300 px-2.5 py-0.5 rounded-full">
-          {gameState.players.length} {gameState.players.length === 1 ? 'Player' : 'Players'}
-        </span>
+        {/* Live Pill Status */}
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 text-xs font-black uppercase tracking-wider">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+          <span>Squad Active</span>
+        </div>
       </div>
 
-      {/* Share Direct Link Card (No room code needed) */}
-      <div className="neo-box bg-white p-4 sm:p-5 text-center relative overflow-hidden">
-        <span className="inline-block text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-300 mb-2">
-          Party Lobby
-        </span>
+      {/* Main Squad Room Card */}
+      <div className="dub-card-orange-glow p-4 sm:p-5 text-center relative overflow-hidden">
+        {/* Decorative corner mascot badge */}
+        <div className="absolute -top-3 -right-3 rotate-12 opacity-90">
+          <DubMascot size="sm" />
+        </div>
 
-        <h3 className="font-[family-name:var(--font-display)] font-black text-xl text-zinc-900">
-          Invite Your Friends
-        </h3>
-        <p className="text-xs text-zinc-500 font-medium mt-0.5 mb-3">
-          Share the link below. Friends join instantly with one tap!
+        <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#ff5500]/20 border border-[#ff5500]/50 text-[#ff7a1a] text-[10px] font-black uppercase tracking-widest mb-2">
+          <span>⚡ Squad Room</span>
+          <span className="text-white font-mono">#{gameState.roomId}</span>
+        </div>
+
+        <h2 className="font-[family-name:var(--font-display)] font-black text-2xl sm:text-3xl text-white tracking-tight leading-tight">
+          Assemble Your Meme Squad!
+        </h2>
+        <p className="text-xs text-zinc-400 font-medium mt-1 mb-4 max-w-xs mx-auto">
+          Share your room invite with friends. Anyone can join instantly with one tap!
         </p>
 
+        {/* 1-Tap Share Button */}
         <button
           onClick={handleCopyLink}
-          className="w-full py-3 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-black text-sm border-2 border-zinc-900 shadow-[3px_3px_0px_#18181b] flex items-center justify-center gap-2 active:translate-x-0.5 active:translate-y-0.5 transition-transform"
+          className="w-full py-3 px-4 rounded-xl dub-btn-orange flex items-center justify-center gap-2 text-sm font-black active:translate-y-0.5"
         >
           {copied ? (
             <>
-              <Check className="w-5 h-5 text-emerald-800 stroke-[3]" />
-              <span>Link Copied! Send via WhatsApp / Chat</span>
+              <Check className="w-5 h-5 text-white stroke-[3]" />
+              <span>Link Copied! Send to Group Chat</span>
             </>
           ) : (
             <>
               <Share2 className="w-5 h-5 stroke-[2.5]" />
-              <span>Share Game Link with Friends</span>
+              <span>Share Squad Link with Friends</span>
             </>
           )}
         </button>
+
+        {/* Room Code Badge */}
+        <div className="mt-3 flex items-center justify-center gap-2 text-[11px] text-zinc-400">
+          <span>Or join with code:</span>
+          <code className="px-2 py-0.5 rounded-md bg-black/60 border border-zinc-700 text-[#ffb800] font-mono font-black text-xs tracking-wider">
+            {gameState.roomId}
+          </code>
+        </div>
       </div>
 
-      {/* Players Lobby & Alphabetical Order */}
-      <div className="neo-box bg-white p-4">
-        <div className="flex items-center justify-between mb-3 border-b border-zinc-200 pb-2">
-          <div>
-            <h3 className="font-black text-xs uppercase tracking-wider text-zinc-800 flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-emerald-600" />
-              Players in Room
-            </h3>
-            <p className="text-[10px] text-zinc-400 font-medium">
-              Turns go in <strong>Alphabetical Order</strong>
-            </p>
+      {/* Squad Player Roster */}
+      <div className="dub-card-charcoal p-4 text-left">
+        <div className="flex items-center justify-between mb-3 border-b border-zinc-800 pb-2">
+          <div className="flex items-center gap-1.5 text-xs font-black uppercase text-white tracking-wider">
+            <Users className="w-4 h-4 text-[#ff5500]" />
+            <span>Squad Roster ({gameState.players.length})</span>
           </div>
-          <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
-            A &rarr; Z Turn Order
+          <span className="text-[10px] text-[#ffb800] font-black uppercase">
+            Turns: A → Z Order
           </span>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
           {alphabeticalPlayers.map((player, idx) => {
             const isMe = player.id === currentPlayer.id;
             return (
               <div
                 key={player.id}
-                className={`flex items-center justify-between p-2.5 rounded-xl border-2 ${
+                className={`flex items-center justify-between px-3 py-2 rounded-xl border transition-all ${
                   isMe
-                    ? 'border-zinc-900 bg-amber-50 shadow-[2px_2px_0px_#18181b]'
-                    : 'border-zinc-200 bg-zinc-50'
+                    ? 'bg-[#ff5500]/15 border-[#ff5500]/60 text-white shadow-sm'
+                    : 'bg-[#121316] border-zinc-800 text-zinc-200'
                 }`}
               >
-                <div className="flex items-center gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-zinc-900 text-white text-[10px] font-black flex items-center justify-center">
-                    {idx + 1}
+                <div className="flex items-center gap-2.5 truncate">
+                  <span className="w-5 text-center text-[10px] font-black text-zinc-500">
+                    #{idx + 1}
                   </span>
-                  <span className="text-2xl">{player.avatar || '😎'}</span>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <p className="font-black text-xs sm:text-sm text-zinc-900">
-                        {player.name}
-                      </p>
-                      {player.isHost && (
-                        <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
-                      )}
-                      {isMe && (
-                        <span className="text-[9px] font-bold bg-zinc-900 text-white px-1.5 py-0.2 rounded-sm">
-                          YOU
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-[10px] text-zinc-500">
-                      {idx === 0 ? 'Acts 1st' : `Acts #${idx + 1}`}
+                  <span className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-lg shrink-0">
+                    {player.avatar}
+                  </span>
+                  <div className="truncate">
+                    <span className="text-xs font-black truncate block">
+                      {player.name}
+                      {isMe && <span className="text-[#ff5500] ml-1">(You)</span>}
+                    </span>
+                    <span className="text-[10px] text-zinc-500 font-bold block">
+                      {player.isHost ? '👑 Squad Host' : 'Ready to act'}
                     </span>
                   </div>
                 </div>
 
-                <span className="text-xs font-mono font-bold text-zinc-400">
-                  {player.score} pts
-                </span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {player.isHost && (
+                    <span className="px-1.5 py-0.5 rounded-md bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[9px] font-black uppercase">
+                      Host
+                    </span>
+                  )}
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                </div>
               </div>
             );
           })}
         </div>
-      </div>
 
-      {/* Start Game Action */}
-      <div className="pt-2">
-        {isHost ? (
-          <button
-            onClick={onStartGame}
-            className="w-full neo-btn bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg py-4 rounded-2xl flex items-center justify-center gap-2.5 shadow-[5px_5px_0px_#18181b]"
-          >
-            <Play className="w-6 h-6 fill-white" />
-            <span>START GAME NOW</span>
-          </button>
-        ) : (
-          <div className="p-4 rounded-2xl bg-zinc-900 text-white text-center border-2 border-zinc-800 shadow-md">
-            <p className="font-black text-xs text-amber-400 uppercase tracking-wider mb-1">
-              Ready to Play!
-            </p>
-            <p className="text-xs text-zinc-300">
-              Waiting for the host to press Start Game...
-            </p>
+        {gameState.players.length === 1 && (
+          <div className="mt-3 p-2.5 rounded-xl bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-bold text-center">
+            👋 Invite at least 1 more friend to start the match!
           </div>
         )}
-
-        {/* Leave Room Secondary Link */}
-        <div className="pt-3 text-center">
-          <button
-            onClick={onLeaveRoom}
-            className="text-xs font-bold text-zinc-500 hover:text-red-700 underline"
-          >
-            Leave Room & Return to Menu
-          </button>
-        </div>
       </div>
+
+      {/* Host Match Launch Area */}
+      {isHost ? (
+        <div className="space-y-2 pt-1">
+          <button
+            onClick={onStartGame}
+            disabled={gameState.players.length < 1}
+            className="w-full py-3.5 px-4 rounded-2xl dub-btn-green flex items-center justify-center gap-2 text-base font-black shadow-lg"
+          >
+            <Play className="w-5 h-5 fill-white" />
+            <span>Launch Squad Match!</span>
+          </button>
+          <p className="text-[10px] text-zinc-500 text-center font-bold">
+            Each player will take turn acting out memes while others guess!
+          </p>
+        </div>
+      ) : (
+        <div className="p-3.5 rounded-2xl bg-zinc-900 border-2 border-zinc-800 text-center space-y-1">
+          <div className="flex items-center justify-center gap-1.5 text-xs font-black text-amber-400 uppercase tracking-wider">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+            <span>Waiting for Squad Host</span>
+          </div>
+          <p className="text-[11px] text-zinc-400">
+            The host will start the match once everyone is in!
+          </p>
+        </div>
+      )}
     </div>
   );
 }

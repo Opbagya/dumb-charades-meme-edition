@@ -2,7 +2,9 @@
 
 import React from 'react';
 import { GameState } from '@/types/game';
-import { EyeOff, Trophy, Timer } from 'lucide-react';
+import { EyeOff, Trophy, Timer, Sparkles } from 'lucide-react';
+import { DubDuelBar } from './DubDuelBar';
+import { DubMascot } from './DubMascot';
 
 interface GuesserViewProps {
   gameState: GameState;
@@ -23,88 +25,99 @@ export function GuesserView({ gameState, secondsRemaining }: GuesserViewProps) {
   const timerColor = isCritical
     ? 'text-red-500 animate-pulse'
     : isWarning
-    ? 'text-amber-400'
+    ? 'text-[#ffb800]'
     : 'text-emerald-400';
 
   return (
     <div className="w-full max-w-md mx-auto h-full flex flex-col justify-between p-2 sm:p-3 overflow-hidden select-none">
       {/* 1. TOP HEADER WITH DIGITAL TIMER */}
-      <div className="flex items-center justify-between gap-2 bg-zinc-950 text-white rounded-xl border-2 border-zinc-900 px-3 py-1.5 shadow-[2px_2px_0px_#000] shrink-0">
-        <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase text-amber-400 tracking-wider">
-          <EyeOff className="w-3.5 h-3.5" />
-          Guessing
-        </span>
+      <div className="flex items-center justify-between gap-2 bg-[#18191e] border-2 border-zinc-800 text-white rounded-2xl px-3 py-1.5 shadow-md shrink-0">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#ffb800] animate-ping" />
+          <span className="text-xs font-black uppercase text-[#ffb800] tracking-wider">
+            Guess the Meme!
+          </span>
+        </div>
 
         {/* Digital Stopwatch in Header */}
-        <div className="flex items-center gap-1.5 px-3 py-0.5 rounded-lg bg-black border border-zinc-800">
+        <div className="flex items-center gap-1.5 px-3 py-0.5 rounded-xl bg-black border border-zinc-800">
           <Timer className={`w-3.5 h-3.5 ${timerColor}`} />
           <span className={`font-digital font-black text-2xl tracking-wider leading-none ${timerColor}`}>
             {formattedTime}
           </span>
         </div>
 
-        <span className="text-[10px] font-bold bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded-full border border-zinc-700">
+        <span className="text-[10px] font-black uppercase bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded-full border border-zinc-700">
           R{gameState.currentRound}/{gameState.totalRounds}
         </span>
       </div>
 
-      {/* 2. CENTER STAGE (Meme strictly hidden) */}
-      <div className="flex-1 min-h-0 my-2 neo-box bg-white overflow-hidden p-4 flex flex-col items-center justify-center text-center">
-        <span className="px-3 py-1 rounded-full bg-red-100 border-2 border-red-600 text-red-700 text-xs font-black uppercase tracking-wider mb-2 animate-pulse">
-          Center Stage
-        </span>
+      {/* 2. DUBDUB LIVE DUEL RACE TRACK (Head-to-head live score progress) */}
+      <div className="my-2 shrink-0">
+        <DubDuelBar players={gameState.players} currentActorId={currentActorId} targetScore={5} />
+      </div>
 
-        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-amber-200 border-3 border-zinc-900 shadow-[3px_3px_0px_#18181b] flex items-center justify-center text-5xl mb-2">
-          {actor?.avatar || '🎭'}
+      {/* 3. CENTER STAGE (Meme strictly hidden from guessers) */}
+      <div className="flex-1 min-h-0 my-1 dub-card-orange-glow p-4 flex flex-col items-center justify-center text-center relative overflow-hidden">
+        {/* Corner Mascot Sticker */}
+        <div className="absolute top-2.5 right-2.5 opacity-90">
+          <DubMascot size="sm" />
         </div>
 
-        <h3 className="font-[family-name:var(--font-display)] font-black text-2xl text-zinc-900 leading-tight">
+        <span className="px-3 py-0.5 rounded-full bg-[#ff5500]/20 border border-[#ff5500]/50 text-[#ff7a1a] text-[10px] font-black uppercase tracking-widest mb-3 animate-pulse">
+          🎭 Center Stage Actor
+        </span>
+
+        {/* Big Avatar Halo */}
+        <div className="relative">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-[#121316] border-3 border-[#ff5500] shadow-[0_0_20px_rgba(255,85,0,0.3)] flex items-center justify-center text-5xl mb-2">
+            {actor?.avatar || '🎭'}
+          </div>
+          <span className="absolute -bottom-1 -right-1 px-2 py-0.5 bg-[#ff5500] text-white rounded-lg text-[9px] font-black uppercase border border-black shadow">
+            ACTOR
+          </span>
+        </div>
+
+        <h3 className="font-[family-name:var(--font-display)] font-black text-2xl text-white leading-tight mt-1">
           {actor?.name || 'Player'}
         </h3>
-        <p className="text-xs font-bold text-zinc-500">is acting right now!</p>
+        <p className="text-xs font-bold text-zinc-400">is acting out the meme in front of you!</p>
 
-        {/* Anti-Peeking Notice */}
-        <div className="mt-3 p-2.5 rounded-xl bg-zinc-950 text-white border-2 border-zinc-800 text-center max-w-xs">
-          <p className="text-xs font-black text-amber-400 uppercase flex items-center justify-center gap-1">
-            <EyeOff className="w-3.5 h-3.5" /> Watch {actor?.name}!
+        {/* Anti-Peeking Callout */}
+        <div className="mt-3 p-3 rounded-2xl bg-[#121316] border-2 border-zinc-800 text-center max-w-xs shadow-inner">
+          <p className="text-xs font-black text-[#ffb800] uppercase flex items-center justify-center gap-1.5">
+            <EyeOff className="w-3.5 h-3.5" /> Watch their moves!
           </p>
-          <p className="text-[11px] text-zinc-300 mt-0.5 leading-snug">
-            Shout your guesses out loud in the room! First right guess gets +1 point!
+          <p className="text-[11px] text-zinc-300 mt-1 leading-snug">
+            Shout your guesses out loud! First player to guess right earns +1 point!
           </p>
         </div>
       </div>
 
-      {/* 3. COMPACT LIVE SCOREBOARD */}
-      <div className="neo-box-sm bg-white p-2.5 shrink-0">
-        <div className="flex items-center justify-between text-[11px] font-black uppercase text-zinc-700 mb-1.5 border-b border-zinc-200 pb-1">
+      {/* 4. COMPACT SQUAD STANDINGS */}
+      <div className="dub-card-charcoal p-2.5 shrink-0">
+        <div className="flex items-center justify-between text-[10px] font-black uppercase text-zinc-400 mb-1 px-1">
           <span className="flex items-center gap-1">
-            <Trophy className="w-3 h-3 text-amber-500" /> Leaderboard
+            <Trophy className="w-3 h-3 text-[#ffb800]" /> Squad Standings
           </span>
-          <span className="text-[10px] text-zinc-400">Alphabetical Turns</span>
+          <span>Alphabetical Turns</span>
         </div>
 
-        <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
+        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar py-1">
           {gameState.players.map((p) => {
-            const isCurrentActor = p.id === currentActorId;
+            const isActor = p.id === currentActorId;
             return (
               <div
                 key={p.id}
-                className={`flex items-center justify-between px-2.5 py-1 rounded-lg border text-xs ${
-                  isCurrentActor
-                    ? 'bg-amber-100 border-amber-500 font-black'
-                    : 'bg-zinc-50 border-zinc-200 text-zinc-700'
+                className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs ${
+                  isActor
+                    ? 'bg-[#ff5500]/20 border-[#ff5500] font-black text-white'
+                    : 'bg-[#121316] border-zinc-800 text-zinc-300'
                 }`}
               >
-                <div className="flex items-center gap-1.5 truncate">
-                  <span>{p.avatar}</span>
-                  <span className="truncate max-w-36">{p.name}</span>
-                  {isCurrentActor && (
-                    <span className="text-[8px] bg-amber-500 text-zinc-950 px-1 py-0.1 rounded font-black">
-                      ACTOR
-                    </span>
-                  )}
-                </div>
-                <span className="font-mono font-black text-zinc-900">{p.score} pts</span>
+                <span>{p.avatar}</span>
+                <span className="truncate max-w-20 font-bold">{p.name}</span>
+                <span className="font-black text-[#ffb800]">{p.score}pt</span>
               </div>
             );
           })}

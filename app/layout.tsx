@@ -17,14 +17,14 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Dumb Charades: Meme Edition",
+  title: "Dumb Charades: Meme Edition | The Real-Time Party Game",
   description: "The mobile-first real-world party game where you act out the internet's most iconic memes!",
   icons: {
     icon: [
       { url: "/icon.png", sizes: "32x32", type: "image/png" },
-      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/logo.png", type: "image/png" },
     ],
-    shortcut: "/favicon.ico",
+    shortcut: "/icon.png",
     apple: "/icon.png",
   },
 };
@@ -34,7 +34,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#991b1b",
+  themeColor: "#ff5500",
 };
 
 export default function RootLayout({
@@ -44,7 +44,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${lilitaOne.variable} ${dmSans.variable}`}>
-      <body className="font-[family-name:var(--font-body)] antialiased">
+      <body className="font-[family-name:var(--font-body)] antialiased bg-[#faf8f5]">
         {children}
         <AgentationProvider />
       </body>
