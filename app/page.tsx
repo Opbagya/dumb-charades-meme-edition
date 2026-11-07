@@ -25,18 +25,9 @@ import {
   X,
   Volume2,
   Trophy,
-  Zap,
 } from 'lucide-react';
 
 const AVATAR_OPTIONS = ['😎', '🤡', '🤪', '🐱', '🐸', '🐶', '🍕', '🚀', '🎭', '👑', '🔥', '👀'];
-
-const MEME_CATEGORIES = [
-  { name: '🔥 Viral Trending', count: '18 memes' },
-  { name: '🎬 Bollywood & Cinema', count: '14 memes' },
-  { name: '⚡ Classic Rage & 2010s', count: '16 memes' },
-  { name: '🐶 Animal Chaos', count: '12 memes' },
-  { name: '🎮 Gaming & Reactions', count: '16 memes' },
-];
 
 function DumbCharadesGame() {
   const searchParams = useSearchParams();
@@ -507,31 +498,6 @@ function DumbCharadesGame() {
 
                 {/* Meme Vault Carousel Preview */}
                 <MemeCarousel />
-
-                {/* Categories Included in this Single Game */}
-                <div className="dub-card-charcoal p-3.5 text-left">
-                  <div className="flex items-center justify-between mb-2 px-1">
-                    <span className="text-[11px] font-black uppercase text-zinc-300 flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-[#ffb800]" />
-                      Included Meme Decks
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {MEME_CATEGORIES.map((cat) => (
-                      <div
-                        key={cat.name}
-                        className="px-2.5 py-2 rounded-xl bg-[#121316] border border-zinc-800 text-left"
-                      >
-                        <span className="text-[11px] font-black text-white block truncate">
-                          {cat.name}
-                        </span>
-                        <span className="text-[9px] text-zinc-500 font-bold block">
-                          {cat.count}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
 
                 {/* Player Setup & Room Actions */}
                 <div className="dub-card-cream p-4 sm:p-5 space-y-3.5">
